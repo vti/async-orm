@@ -48,7 +48,7 @@ has _columns_map => (
     default => sub {{}}
 );
 
-use Async::ORM::RelationshipFactory;
+use Async::ORM::Relationship;
 
 our %objects;
 
@@ -113,7 +113,7 @@ sub new {
     if ($self->relationships && %{$self->relationships}) {
         foreach my $rel (keys %{$self->relationships}) {
             $self->relationships->{$rel} =
-              Async::ORM::RelationshipFactory->build(
+              Async::ORM::Relationship->build(
                 %{$self->relationships->{$rel}},
                 orig_class => $for_class);
         }
@@ -226,7 +226,7 @@ sub add_relationship {
     return unless $name && $options;
 
     $self->relationships->{$name} =
-      Async::ORM::RelationshipFactory->build(%$options,
+      Async::ORM::Relationship->build(%$options,
         orig_class => $self->class);
 }
 
@@ -269,3 +269,33 @@ sub _get_parents {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+Async::ORM - Asynchronous Object-relational mapping
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 ATTRIBUTES
+
+=head2 C<attr>
+
+=head1 METHODS
+
+=head2 C<new>
+
+=head1 AUTHOR
+
+Viacheslav Tikhanovskii, C<vti@cpan.org>.
+
+=head1 COPYRIGHT
+
+Copyright (C) 2009, Viacheslav Tikhanovskii.
+
+This program is free software, you can redistribute it and/or modify it under
+the same terms as Perl 5.10.
+
+=cut

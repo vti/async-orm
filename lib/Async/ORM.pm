@@ -3,8 +3,10 @@ package Async::ORM;
 use Any::Moose;
 
 use Async::Hooks;
-use Async::ORM::SQLBuilder;
+use Async::ORM::SQL;
 use Async::ORM::Schema;
+
+our $VERSION = '20090624';
 
 has is_in_db => (
     isa     => 'Bool',
@@ -378,7 +380,7 @@ sub create {
 
     return $cb->($dbh, $self) if $self->is_in_db;
 
-    my $sql = Async::ORM::SQLBuilder->build('insert');
+    my $sql = Async::ORM::SQL->build('insert');
     $sql->table($self->schema->table);
     $sql->columns([$self->columns]);
     $sql->driver($dbh->{Driver}->{Name});
@@ -446,7 +448,7 @@ sub load {
 
     die ref($self) . ": no primary or unique keys specified" unless @columns;
 
-    my $sql = Async::ORM::SQLBuilder->build('select');
+    my $sql = Async::ORM::SQL->build('select');
 
     $sql->source($self->schema->table);
     $sql->columns($self->schema->columns);
@@ -517,7 +519,7 @@ sub update {
         }
     }
 
-    my $sql = Async::ORM::SQLBuilder->build('update');
+    my $sql = Async::ORM::SQL->build('update');
     $sql->table($self->schema->table);
     $sql->columns(\@columns);
     $sql->bind(\@values);
@@ -569,7 +571,7 @@ sub delete {
         }
     }
 
-    my $sql = Async::ORM::SQLBuilder->build('delete');
+    my $sql = Async::ORM::SQL->build('delete');
     $sql->table($self->schema->table);
     $sql->where([@{$args->{where}}]) if $args->{where};
     $sql->to_string;
@@ -609,7 +611,7 @@ sub find {
         @columns = $class->schema->columns;
     }
 
-    my $sql = Async::ORM::SQLBuilder->build('select');
+    my $sql = Async::ORM::SQL->build('select');
     $sql->source($class->schema->table);
     $sql->columns(@columns);
 
@@ -676,7 +678,7 @@ sub count {
 
     ($cb, $args) = ($args, {}) unless $cb;
 
-    my $sql = Async::ORM::SQLBuilder->build('select');
+    my $sql = Async::ORM::SQL->build('select');
     $sql->source($class->schema->table);
     $sql->columns(\'COUNT(*) AS count');
     $sql->to_string;
@@ -1336,3 +1338,100 @@ sub to_hash {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+Async::ORM - Asynchronous Object-relational mapping
+
+=head1 SYNOPSIS
+
+
+=head1 DESCRIPTION
+
+=head1 ATTRIBUTES
+
+=head2 C<attr>
+
+=head1 METHODS
+
+=head2 C<new>
+
+    my $article = Article->new;
+
+Returns a new L<Async::ORM> object.
+
+=head2 C<debug>
+
+=head2 C<init>
+
+=head2 C<schema>
+
+=head2 C<columns>
+
+=head2 C<column>
+
+=head2 C<clone>
+
+=head2 C<begin_work>
+
+=head2 C<rollback>
+
+=head2 C<commit>
+
+=head2 C<create>
+
+=head2 C<load>
+
+=head2 C<update>
+
+=head2 C<delete>
+
+=head2 C<find>
+
+=head2 C<count>
+
+=head2 C<related>
+
+=head2 C<create_related>
+
+=head2 C<load_related>
+
+=head2 C<find_related>
+
+=head2 C<count_related>
+
+=head2 C<update_related>
+
+=head2 C<delete_related>
+
+=head2 C<set_related>
+
+=head2 C<to_hash>
+
+=head1 SUPPORT
+
+=head1 DEVELOPMENT
+
+=head2 Repository
+
+    http://github.com/vti/async-orm/commits/master
+
+=head1 SEE ALSO
+
+=head1 AUTHOR
+
+Viacheslav Tikhanovskii, C<vti@cpan.org>.
+
+=head1 CREDITS
+
+In alphabetical order:
+
+=head1 COPYRIGHT
+
+Copyright (C) 2009, Viacheslav Tikhanovskii.
+
+This program is free software, you can redistribute it and/or modify it under
+the same terms as Perl 5.10.
+
+=cut

@@ -1,14 +1,8 @@
-use Test::More tests => 3;
-
-use lib 't/lib';
+use Test::More tests => 2;
 
 use Async::ORM::Relationship;
 
-my $rel = Async::ORM::Relationship->new(
-    type       => 'many to one',
-    orig_class => 'Article'
-);
+my $rel = Async::ORM::Relationship->build(type => 'many to one');
 ok($rel);
 
-is($rel->type,       'many to one');
-is($rel->orig_class, 'Article');
+is(ref $rel, 'Async::ORM::Relationship::ManyToOne');
