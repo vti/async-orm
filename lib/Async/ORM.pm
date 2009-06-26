@@ -586,6 +586,8 @@ sub delete {
     $sql->where([@{$args->{where}}]) if $args->{where};
     $sql->to_string;
 
+    warn "$sql" if $self->debug;
+
     $self->_delete_related(
         $dbh => sub {
             my ($dbh) = @_;
@@ -656,7 +658,7 @@ sub find {
     $sql->limit(1) if $single;
     $sql->to_string;
 
-    warn $sql if $class->debug;
+    warn "$sql" if $class->debug;
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
