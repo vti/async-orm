@@ -579,30 +579,56 @@ sub delete {
               unless $self->schema->is_primary_key($name)
                   || $self->schema->is_unique_key($name);
         }
+    #}
+
+        my $sql = Async::ORM::SQL->build('delete');
+        $sql->table($self->schema->table);
+        $sql->where([@{$args->{where}}]) if $args->{where};
+        $sql->to_string;
+
+        warn "$sql" if $self->debug;
+
+        $self->_delete_related(
+            $dbh => sub {
+                my ($dbh) = @_;
+
+                $dbh->exec(
+                    "$sql" => $sql->bind => sub {
+                        my ($dbh, $rows, $metadata) = @_;
+
+                        return $cb->($dbh, 0) if $metadata->{rv} eq '0E0';
+
+                        return $cb->($dbh, 1);
+                    }
+                );
+            }
+        );
     }
+    else {
+        $self->find(
+            $dbh => $args => sub {
+                my ($dbh, $objects) = @_;
 
-    my $sql = Async::ORM::SQL->build('delete');
-    $sql->table($self->schema->table);
-    $sql->where([@{$args->{where}}]) if $args->{where};
-    $sql->to_string;
+                my $hooks = Async::Hooks->new;
 
-    warn "$sql" if $self->debug;
+                foreach my $object (@$objects) {
+                    $hooks->hook(
+                        chain => sub {
+                            my ($ctl, $args) = @_;
 
-    $self->_delete_related(
-        $dbh => sub {
-            my ($dbh) = @_;
-
-            $dbh->exec(
-                "$sql" => $sql->bind => sub {
-                    my ($dbh, $rows, $metadata) = @_;
-
-                    return $cb->($dbh, 0) if $metadata->{rv} eq '0E0';
-
-                    return $cb->($dbh, 1);
+                            $object->delete($dbh => sub { $ctl->next; });
+                        }
+                    );
                 }
-            );
-        }
-    );
+
+                $hooks->call(
+                    chain => [] => sub {
+                        return $cb->($dbh, 1);
+                    }
+                );
+            }
+        );
+    }
 }
 
 sub find {
@@ -1358,12 +1384,195 @@ Async::ORM - Asynchronous Object-relational mapping
 
 =head1 SYNOPSIS
 
+    package Article;
+
+    use Mouse;
+
+    extends 'Async::ORM';
+
+    __PACKAGE__->schema(
+        table          => 'article',
+        columns        => [qw/ id category_id author_id title /],
+        primary_keys   => ['id'],
+        auto_increment => 'id',
+
+        relationships => {
+            author => {
+                type  => 'many to one',
+                class => 'Author',
+                map   => {author_id => 'id'}
+            },
+            category => {
+                type  => 'many to one',
+                class => 'Category',
+                map   => {category_id => 'id'}
+            },
+            tags => {
+                type      => 'many to many',
+                map_class => 'ArticleTagMap',
+                map_from  => 'article',
+                map_to    => 'tag'
+            },
+            comments => {
+                type  => 'one to many',
+                class => 'Comment',
+                where => [type => 'article'],
+                map   => {id => 'master_id'}
+            }
+        }
+    );
+
+    package ArticleTagMap;
+
+    use Mouse;
+
+    extends 'Async::ORM';
+
+    __PACKAGE__->schema(
+        table        => 'article_tag_map',
+        columns      => [qw/ article_id tag_id /],
+        primary_keys => [qw/ article_id tag_id /],
+
+        relationships => {
+            article => {
+                type  => 'many to one',
+                class => 'Article',
+                map   => {article_id => 'id'}
+            },
+            tag => {
+                type  => 'many to one',
+                class => 'Tag',
+                map   => {tag_id => 'id'}
+            }
+        }
+    );
+
+    package Tag;
+
+    use Mouse;
+
+    extends 'Async::ORM';
+
+    __PACKAGE__->schema(
+        table          => 'tag',
+        columns        => [qw/id name/],
+        primary_keys   => ['id'],
+        auto_increment => 'id',
+        unique_keys    => ['name'],
+
+        relationships => {
+            articles => {
+                type      => 'many to many',
+                map_class => 'ArticleTagMap',
+                map_from  => 'tag',
+                map_to    => 'article'
+            }
+        }
+    );
+
+    package Author;
+
+    use Mouse;
+
+    extends 'Async::ORM';
+
+    __PACKAGE__->schema(
+        table          => 'author',
+        columns        => [qw/id name password/],
+        primary_keys   => ['id'],
+        auto_increment => 'id',
+        unique_keys    => 'name',
+
+        relationships => {
+            author_admin => {
+                type  => 'one to one',
+                class => 'AuthorAdmin',
+                map   => {id => 'author_id'}
+            },
+            articles => {
+                type  => 'one to many',
+                class => 'Article',
+                map   => {id => 'author_id'}
+            }
+        }
+    );
+
+    package Comment;
+
+    use Mouse;
+
+    extends 'Async::ORM';
+
+    __PACKAGE__->schema(
+        table        => 'comment',
+        columns      => [qw/master_id type content/],
+        primary_keys => [qw/master_id type/],
+
+        relationships => {
+            master => {
+                type      => 'proxy',
+                proxy_key => 'type',
+            },
+            article => {
+                type  => 'many to one',
+                class => 'Article',
+                map   => {master_id => 'id'}
+            },
+            podcast => {
+                type  => 'many to one',
+                class => 'Podcast',
+                map   => {master_id => 'id'}
+            }
+        }
+    );
+
+    package main;
+
+    my $dbh = Async::ORM::DBI->new(dbi => 'dbi:SQLite:table.db');
+
+    Author->new(
+        name     => 'foo',
+        articles => [
+            {   title => 'foo',
+                tags  => {name => 'people'}
+            },
+            {   title => 'bar',
+                tags  => [{name => 'unix'}, {name => 'perl'}]
+            }
+        ]
+      )->create(
+        $dbh => sub {
+            my ($dbh, $author) = @_;
+
+            ok($author);
+
+            $author->related('articles')->[0]->create_related(
+                $dbh => 'comments' => {content => 'foo'} => sub {
+                    my ($dbh, $comment) = @_;
+
+                    ok($comment);
+
+                    Article->find(
+                        $dbh => {where => ['tags.name' => 'unix']} => sub {
+                            my ($dbh, $articles) = @_;
+
+                            is(@$articles, 1);
+
+                            $author->delete(
+                                $dbh => sub {
+                                    my ($dbh, $ok) = @_;
+
+                                    ok($ok);
+                                }
+                            );
+                        }
+                    );
+                }
+            );
+        }
+      );
 
 =head1 DESCRIPTION
-
-=head1 ATTRIBUTES
-
-=head2 C<attr>
 
 =head1 METHODS
 
@@ -1375,51 +1584,266 @@ Returns a new L<Async::ORM> object.
 
 =head2 C<debug>
 
+You can turn on debugging by setting ASYNC_ORM_DEBUG environmental variable.
+
 =head2 C<init>
+
+    my $article = Article->new;
+    $article->init(title => 'foo', content => 'bar');
+
+Sets objects columns.
 
 =head2 C<schema>
 
+Used to define class schema. For more information see L<Async::ORM::Schema>.
+
 =head2 C<columns>
+
+    my @columns = $article->columns;
+
+Returns object columns that are set or have a default value.
 
 =head2 C<column>
 
+    my $title = $article->column('title');
+    $article->column(title => 'foo');
+
+Gets and sets column value.
+
 =head2 C<clone>
+
+    my $clone = $article->clone;
+
+Object cloning. Everything is copied except primary key and unique key values.
 
 =head2 C<begin_work>
 
+    Async::ORM->begin_work($dbh => sub {
+        my ($dbh) = @_;
+
+            ...
+    });
+
+Begins transaction.
+
 =head2 C<rollback>
+
+Rolls back transaction.
 
 =head2 C<commit>
 
+Commits transaction.
+
 =head2 C<create>
+
+    Article->new(title => 'foo')->create($dbh => sub {
+        my ($dbh, $article) = @_;
+
+            ...
+    });
+
+Creates a new object. Sets auto increment field to the last inserted id.
 
 =head2 C<load>
 
+    Article->new(id => 1)->load($dbh => sub {
+        my ($dbh, $article) = @_;
+
+            ...
+    });
+
+Loads object using primary key or unique key that was provided when creating a
+new instance. Dies if there was no primary or unique key.
+
 =head2 C<update>
+
+    $article->update($dbh => sub {
+        my ($dbh, $article) = @_;
+
+            ...
+    });
+
+    or
+
+    Article->update(
+        $dbh => {where => [title => 'foo'], set => {title => 'bar'}} => sub {
+            my ($dbh, $article) = @_;
+
+            ...
+        }
+    );
+
+Updates object.
 
 =head2 C<delete>
 
+    $article->delete($dbh => sub {
+        my ($dbh, $rows_delete) = @_;
+
+            ...
+    });
+
+Deletes object.
+
 =head2 C<find>
+
+    Article->find($dbh => {where => [title => 'foo']} => sub {
+        my ($dbh, $articles) = @_;
+
+            ...
+    });
+
+Find objects. The second argument is a hashref that is translated into sql. Keys
+that can be used:
+
+=head3 C<where>
+
+Build SQL. For more information see L<Async::ORM::SQL>.
+
+=head3 C<with>
+
+Prefetch related objects.
+
+=head3 C<single>
+
+By default C<find> returns array reference, by setting C<single> to 1 undef or
+one object is returned (the first one).
+
+=head3 C<order_by>
+
+ORDER BY
+
+=head3 C<having>
+
+HAVING
+
+=head3 C<limit>
+
+LIMIT
+
+=head3 C<offset>
+
+OFFSET
+
+=head3 C<page>
+
+With C<page_size> you can select specific pages without calculation limit and
+offset by yourself.
+
+=head3 C<page_size>
+
+The size of the C<page>. It is 20 items by default.
+
+=head3 C<columns>
+
+Select only specific columns.
 
 =head2 C<count>
 
+    Article->cound($dbh => {where => [title => 'foo']} => sub {
+        my ($dbh, $articles) = @_;
+
+            ...
+    });
+
+Count objects.
+
 =head2 C<related>
+
+    my $author = $article->related('author');
+
+Gets prefetched related object(s).
 
 =head2 C<create_related>
 
-=head2 C<load_related>
+    $article->create_related($dbh => 'comments' => {content => 'bar'} => sub {
+        my ($dbh, $comments) = @_;
+
+            ...
+    });
+
+Creates related objects.
 
 =head2 C<find_related>
 
+    $article->find_related(
+        $dbh => 'comments' => {where => [content => 'bar']} => sub {
+            my ($dbh, $comments) = @_;
+
+            ...
+        }
+    );
+
+Finds related objects.
+
+=head2 C<load_related>
+
+    $article->load_related(
+        $dbh => 'comments' => {where => [content => 'bar']} => sub {
+            my ($dbh, $comments) = @_;
+
+            $article->related('comments');
+            ...
+        }
+    );
+
+Same as C<find_objects> but sets C<related> method.
+
 =head2 C<count_related>
+
+    $article->count_related(
+        $dbh => 'comments' => {where => [content => 'bar']} => sub {
+            my ($dbh, $comments) = @_;
+
+            ...
+        }
+    );
+
+Counts related objects.
 
 =head2 C<update_related>
 
+    $article->update_related(
+        $dbh => 'comments' => {
+            where => [content => 'bar'],
+            set   => {content => 'foo'}
+          } => sub {
+            my ($dbh, $comments) = @_;
+
+            ...
+        }
+    );
+
+Updates related objects. Use set key for setting new values.
+
 =head2 C<delete_related>
+
+    $article->delete_related(
+        $dbh => 'comments' => {where => [content => 'bar']} => sub {
+            my ($dbh, $rows_deleted) = @_;
+
+            ...
+        }
+    );
+
+Deletes related objects.
 
 =head2 C<set_related>
 
+    $article->set_related(
+        $dbh => 'tags' => [{name => 'foo'}, {name => 'bar'}] => sub {
+            my ($dbh, $tags) = @_;
+
+            ...
+        }
+    );
+
+Creates and deletes related objects to satisfy the set. Usefull when setting
+many to many relationships.
+
 =head2 C<to_hash>
+
+Serializes object to hash. All prefetched objects are serialized also.
 
 =head1 SUPPORT
 
