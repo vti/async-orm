@@ -9,10 +9,6 @@ sub new {
 
     my $driver = delete $params{driver} || 'Async::ORM::DBI::Simple';
 
-    #unless (Any::Moose::is_class_loaded($driver)) {
-        #Any::Moose::load_class($driver);
-    #}
-
     eval "require $driver;";
     die $@ if $@;
 
@@ -24,19 +20,34 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::DBI - Database handle for Async::ORM
 
 =head1 SYNOPSIS
 
+    my $dbh = Async::ORM::DBI->new(dbi => "dbi:SQLite:table.db");
+
 =head1 DESCRIPTION
 
-=head1 ATTRIBUTES
+This is a dbh factory. Returns a new driver instance that is based on
+L<Async::ORM::DBI::Abstract>.
 
-=head2 C<attr>
+It is created so it is easy to write you own database
+handle. Existing implementations include wrappers for L<DBI> and
+L<AnyEvent::DBI>.
 
 =head1 METHODS
 
 =head2 C<new>
+
+    my $dbh = Async::ORM::DBI->new(dbi => "dbi:SQLite:table.db");
+
+Returns new L<Async::ORM::DBI> instance. By default L<Async::ORM::DBI::Simple>
+is used. To change this behavior pass C<driver> option.
+
+    my $dbh = Async::ORM::DBI->new(
+        dbi    => "dbi:SQLite:table.db",
+        driver => 'Async::ORM::DBI::AnyEvent'
+    );
 
 =head1 AUTHOR
 

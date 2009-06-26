@@ -1574,7 +1574,7 @@ Async::ORM - Asynchronous Object-relational mapping
 
 =head1 DESCRIPTION
 
-=haad1 ATTRIBUTES
+=head1 ATTRIBUTES
 
 =head2 is_in_db
 

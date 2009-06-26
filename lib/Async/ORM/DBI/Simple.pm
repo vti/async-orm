@@ -85,19 +85,41 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::DBI::Simple - Simple DBI wrapper
 
 =head1 SYNOPSIS
 
+    my $dbh = Async::ORM::DBI->new(dbi => "dbi:SQLite:table.db");
+
 =head1 DESCRIPTION
+
+This is just a simple DBI wrapper. It should be used only for sequential
+programming. This way you can use L<Async::ORM> in usual scripts.
 
 =head1 ATTRIBUTES
 
-=head2 C<attr>
+=head2 C<dbh>
+
+    my $dbh = Async::ORM::DBI->new(dbi => "dbi:SQLite:table.db");
+    my $original_dbh = $dbh->dbh;
+
+Holds original DBI object.
 
 =head1 METHODS
 
 =head2 C<new>
+
+Returns new L<Async::ORM::DBI::Simple> instance.
+
+=head2 C<begin_work>
+
+=head2 C<rollback>
+
+=head2 C<commit>
+
+=head2 C<exec>
+
+=head2 C<func>
 
 =head1 AUTHOR
 

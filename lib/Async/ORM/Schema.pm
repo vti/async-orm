@@ -273,9 +273,49 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::Schema - Schema class
 
 =head1 SYNOPSIS
+
+    package Article;
+
+    use Mouse;
+
+    extends 'Async::ORM';
+
+    __PACKAGE__->schema(
+        table          => 'article',
+        columns        => [qw/id category_id author_id title/],
+        primary_keys   => ['id'],
+        auto_increment => 'id',
+
+        relationships => {
+            author => {
+                type  => 'many to one',
+                class => 'Author',
+                map   => {author_id => 'id'}
+            },
+            category => {
+                type  => 'many to one',
+                class => 'Category',
+                map   => {category_id => 'id'}
+            },
+            tags => {
+                type      => 'many to many',
+                map_class => 'ArticleTagMap',
+                map_from  => 'article',
+                map_to    => 'tag'
+            },
+            comments => {
+                type  => 'one to many',
+                class => 'Comment',
+                where => [type => 'article'],
+                map   => {id => 'master_id'}
+            }
+        }
+    );
+
+    1;
 
 =head1 DESCRIPTION
 
@@ -286,6 +326,156 @@ Async::ORM - Asynchronous Object-relational mapping
 =head1 METHODS
 
 =head2 C<new>
+
+Not called externally, but sets the following attributes:
+
+=head3 C<table>
+
+    __PACKAGE__->schema(
+        table => 'article
+        ...
+
+Table name.
+
+=head3 C<columns>
+
+    __PACKAGE__->schema(
+        ...
+        columns => [qw/id title/]
+        ...
+
+Sets columns.
+
+=head3 C<primary_keys>
+
+    __PACKAGE__->schema(
+        ...
+        primary_keys => [qw/id/]
+        ...
+
+Sets primary keys. Could be multiple of course.
+
+=head3 C<unique_keys>
+
+    __PACKAGE__->schema(
+        ...
+        unique_keys => [qw/title/]
+        ...
+
+Sets unique keys. Could be multiple of course.
+
+=head3 C<auto_increment>
+
+    __PACKAGE__->schema(
+        ...
+        auto_increment => 'id'
+        ...
+
+Sets auto increment key. Is altered on object database insertion.
+
+=head3 C<relationships>
+
+    __PACKAGE__->schema(
+        ...
+        relationships => {
+            author => {
+                type  => 'many to one',
+                class => 'Author',
+                map   => {author_id => 'id'}
+            },
+        ...
+
+Sets relationships. For more information see L<Async::ORM::Relationship>.
+
+=head2 C<is_column>
+
+    $article->schema->is_column('title'); # true
+
+Returns true when argument is a column. False otherwise.
+
+=head2 C<is_primary_key>
+
+    $article->schema->is_primary_key('title'); # false
+
+Returns true when argument is a primary key. False otherwise.
+
+=head2 C<is_auto_increment>
+
+    $article->schema->is_auto_increment('id'); # true
+
+Returns true when argument is an auto increment column. False otherwise.
+
+=head2 C<is_unique_key>
+
+    $article->schema->is_unique_key('title'); # false
+
+Returns true when argument is a unique key. False otherwise.
+
+=head2 C<columns>
+
+    my @columns = $article->schema->columns;
+
+Returns schema columns.
+
+=head2 C<primary_keys>
+
+    my @primary_keys = $article->schema->primary_keys;
+
+Returns primary keys.
+
+=head2 C<unique_keys>
+
+    my @unique_keys = $article->schema->unique_keys;
+
+Returns unique keys.
+
+=head2 C<add_column>
+
+    __PACKAGE__->add_column(content => {default => 'foo'});
+
+Adds column to the schema. Usually used when you extend existing class and want
+to add few new columns.
+
+=head2 C<add_columns>
+
+    __PACKAGE__->add_column(qw/content image/);
+
+Adds columns to the schema. Uses C<add_column>.
+
+=head2 C<add_relationship>
+
+    __PACKAGE__->add_relationship(
+        comments => {
+            type  => 'one to many',
+            class => 'Comment',
+            where => [type => 'article'],
+            map   => {id => 'master_id'}
+        }
+    );
+
+Adds relationhips to the schema. Usually used when you extend existing class and want
+to add few new relationhips.
+
+=head2 C<add_relationships>
+
+    __PACKAGE__->add_relationships(
+        comments => {
+            type  => 'one to many',
+            class => 'Comment',
+            where => [type => 'article'],
+            map   => {id => 'master_id'}
+        },
+        ...
+    );
+
+Adds relationhips to the schema. Uses C<add_relationhip>.
+
+=head2 C<del_column>
+
+    __PACKAGE__->del_column('content');
+
+Deletes column from the schema. Usually used when you extend existing class and want
+to delete few old columns.
 
 =head1 AUTHOR
 
