@@ -20,6 +20,7 @@ Category->new(title => 'bar')->create(
         my ($dbh, $category) = @_;
 
         push @categories, $category;
+
     }
 );
 
@@ -30,19 +31,23 @@ Article->new(title => 'foo', category_id => $categories[0]->column('id'))
 
         push @articles, $article;
 
-        $article->update_related(
-            $dbh => 'category' => {set => {title => 'foo'}} =>
-              sub { ok($_[1]) });
     }
   );
 
-Article->new(id => $articles[0]->column('id'))->load(
-    $dbh => {with => 'category'} => sub {
-        my ($dbh, $article) = @_;
+Article->find(
+    $dbh => {where => ['category.title' => 'foo']} => sub {
+        my ($dbh, $articles) = @_;
 
-        my $category = $article->related('category');
-        ok($category);
-        is($category->column('title'), 'foo');
+        is_deeply($articles, []);
+    }
+);
+
+Article->find(
+    $dbh => {where => ['category.title' => 'bar'], with => 'category'} => sub {
+        my ($dbh, $articles) = @_;
+
+        is(@$articles, 1);
+        is($articles->[0]->related('category')->column('title'), 'bar');
     }
 );
 

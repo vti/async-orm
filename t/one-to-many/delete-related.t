@@ -8,28 +8,27 @@ use lib 't/lib';
 use TestDB;
 
 use Author;
-use AuthorAdmin;
-use Admin;
+use Article;
 
 my $dbh = TestDB->dbh;
 
 my $id;
 
-Author->new(name => 'foo', author_admin => {beard => 0})->create(
+Author->new(name => 'foo', articles => {title => 'foo'})->create(
     $dbh => sub {
         my ($dbh, $author) = @_;
 
         $id = $author->column('id');
 
-        $author->delete_related($dbh => 'author_admin' => sub {});
+        $author->delete_related($dbh => 'articles' => sub {});
     }
 );
 
-AuthorAdmin->find(
+Article->find(
     $dbh => {where => [author_id => $id], single => 1} => sub {
-        my ($dbh, $author_admin) = @_;
+        my ($dbh, $articles) = @_;
 
-        ok(not defined $author_admin);
+        ok(not defined $articles);
     }
 );
 

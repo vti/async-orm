@@ -1,47 +1,53 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 2;
 
 use lib 't/lib';
 
 use TestDB;
 
-use Author;
-use AuthorAdmin;
-use Admin;
+use Article;
+use Category;
 
 my $dbh = TestDB->dbh;
 
-my @authors;
+my @articles;
+my @categories;
 
-Author->new(name => 'foo', author_admin => {beard => 0})->create(
+Category->new(title => 'bar')->create(
     $dbh => sub {
-        my ($dbh, $author) = @_;
+        my ($dbh, $category) = @_;
 
-        push @authors, $author;
+        push @categories, $category;
 
     }
 );
 
-Author->new(id => $authors[0]->column('id'))->load(
+Article->new(title => 'foo', category_id => $categories[0]->column('id'))->create(
     $dbh => sub {
-        my ($dbh, $author) = @_;
+        my ($dbh, $article) = @_;
 
-        $author->load_related(
-            $dbh => 'author_admin' => sub {
-                my ($dbh, $author_admin) = @_;
+        push @articles, $article;
 
-                ok($author_admin);
-                is($author_admin->column('beard'), 0);
+    }
+);
 
-                $author_admin = $author->related('author_admin');
+Article->new(id => $articles[0]->column('id'))->load(
+    $dbh => sub {
+        my ($dbh, $article) = @_;
 
-                ok($author_admin);
-                is($author_admin->column('beard'), 0);
+        $article->load_related(
+            $dbh => 'category' => sub {
+                my ($dbh, $category) = @_;
+                
+                $category = $article->related('category');
+                ok($category);
+                is($category->column('title'), 'bar');
             }
         );
     }
 );
 
-$authors[0]->delete($dbh => sub { });
+$articles[0]->delete($dbh => sub { });
+$categories[0]->delete($dbh => sub { });

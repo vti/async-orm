@@ -7,49 +7,64 @@ use lib 't/lib';
 
 use TestDB;
 
-use Author;
-use AuthorAdmin;
-use Admin;
+use Category;
+use Article;
 
 my $dbh = TestDB->dbh;
 
-my @authors;
+my @articles;
+my @categories;
 
-Author->new(name => 'foo', author_admin => {beard => 0})->create(
+Category->new(title => 'bar')->create(
     $dbh => sub {
-        my ($dbh, $author) = @_;
+        my ($dbh, $category) = @_;
 
-        push @authors, $author;
+        push @categories, $category;
 
-        $author->related('author_admin')->column(beard => 1);
-        $author->update($dbh => sub { ok($_[1]) });
     }
 );
 
-Author->new(id => $authors[0]->column('id'))->load(
-    $dbh => {with => 'author_admin'} => sub {
-        my ($dbh, $author) = @_;
+Article->new(title => 'foo', category_id => $categories[0]->column('id'))->create(
+    $dbh => sub {
+        my ($dbh, $article) = @_;
 
-        my $author_admin = $author->related('author_admin');
-        ok($author_admin);
-        is($author_admin->column('beard'), 1);
+        push @articles, $article;
 
-        $author->column(name => 'bar');
-        $author_admin->column(beard => 0);
-        $author->update($dbh => sub {});
+        $article->load_related(
+            $dbh => category => sub {
+                my ($dbh, $category) = @_;
+                $article->related('category')->column(title => 'foo');
+                $article->update($dbh => sub { ok($_[1]) });
+            }
+        );
     }
 );
 
-Author->new(id => $authors[0]->column('id'))->load(
-    $dbh => {with => 'author_admin'} => sub {
-        my ($dbh, $author) = @_;
+Article->new(id => $articles[0]->column('id'))->load(
+    $dbh => {with => 'category'} => sub {
+        my ($dbh, $article) = @_;
 
-        is($author->column('name'), 'bar');
+        my $category = $article->related('category');
+        ok($category);
+        is($category->column('title'), 'foo');
 
-        my $author_admin = $author->related('author_admin');
-        ok($author_admin);
-        is($author_admin->column('beard'), 0);
+        $article->column(title => 'bar');
+        $category->column(title => 'bar');
+        $article->update($dbh => sub {});
     }
 );
 
-$authors[0]->delete($dbh => sub { });
+Article->new(id => $articles[0]->column('id'))->load(
+    $dbh => {with => 'category'} => sub {
+        my ($dbh, $article) = @_;
+
+        is($article->column('title'), 'bar');
+
+        my $category = $article->related('category');
+        ok($category);
+        is($category->column('title'), 'bar');
+    }
+);
+
+$articles[0]->delete($dbh => sub { });
+$categories[0]->delete($dbh => sub { });

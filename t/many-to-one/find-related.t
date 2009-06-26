@@ -7,36 +7,46 @@ use lib 't/lib';
 
 use TestDB;
 
-use Author;
-use AuthorAdmin;
-use Admin;
+use Article;
+use Category;
 
 my $dbh = TestDB->dbh;
 
-my @authors;
+my @articles;
+my @categories;
 
-Author->new(name => 'foo', author_admin => {beard => 0})->create(
+Category->new(title => 'bar')->create(
     $dbh => sub {
-        my ($dbh, $author) = @_;
+        my ($dbh, $category) = @_;
 
-        push @authors, $author;
+        push @categories, $category;
 
     }
 );
 
-Author->new(id => $authors[0]->column('id'))->load(
+Article->new(title => 'foo', category_id => $categories[0]->column('id'))->create(
     $dbh => sub {
-        my ($dbh, $author) = @_;
+        my ($dbh, $article) = @_;
 
-        $author->find_related(
-            $dbh => 'author_admin' => sub {
-                my ($dbh, $author_admin) = @_;
+        push @articles, $article;
 
-                ok($author_admin);
-                is($author_admin->column('beard'), 0);
+    }
+);
+
+Article->new(id => $articles[0]->column('id'))->load(
+    $dbh => sub {
+        my ($dbh, $article) = @_;
+
+        $article->find_related(
+            $dbh => 'category' => sub {
+                my ($dbh, $category) = @_;
+
+                ok($category);
+                is($category->column('title'), 'bar');
             }
         );
     }
 );
 
-$authors[0]->delete($dbh => sub { });
+$articles[0]->delete($dbh => sub { });
+$categories[0]->delete($dbh => sub { });

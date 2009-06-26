@@ -173,25 +173,57 @@ sub _create_related {
                             );
                         }
                         else {
-                            my $objects;
+                            my $data;
 
                             if (ref $rel_values eq 'ARRAY') {
-                                $objects = $rel_values;
+                                $data = $rel_values;
                             }
                             elsif (ref $rel_values eq 'HASH') {
-                                $objects = [$rel_values];
+                                $data = [$rel_values];
                             }
                             elsif (ref $rel_values) {
-                                $objects = [$rel_values->to_hash];
+                                $data = [$rel_values->to_hash];
                             }
                             else {
                                 die
                                   "wrong params when setting '$rel_name' relationship: $rel_values";
                             }
 
-                            #if ($rel_type eq 'one to one') {
+                            if ($rel_type eq 'one to many') {
+                                my $hooks = Async::Hooks->new;
+
+                                my $objects = [];
+
+                                foreach my $d (@$data) {
+                                    $hooks->hook(
+                                        chain => sub {
+                                            my ($ctl, $args) = @_;
+
+                                            $self->create_related(
+                                                $dbh => $rel_name => $d =>
+                                                  sub {
+                                                    my ($dbh, $object) = @_;
+
+                                                    push @$objects, $object;
+
+                                                    $ctl->next;
+                                                }
+                                            );
+
+                                        }
+                                    );
+                                }
+
+                                $hooks->call(
+                                    chain => [] => sub {
+                                        $self->related( $rel_name => $objects);
+                                        $ctl->next;
+                                    }
+                                );
+                            }
+                            else {
                                 $self->create_related(
-                                    $dbh => $rel_name => $objects->[0] => sub {
+                                    $dbh => $rel_name => $data->[0] => sub {
                                         my ($dbh, $rel_object) = @_;
 
                                         $self->related($rel_name => $rel_object);
@@ -199,14 +231,7 @@ sub _create_related {
                                         $ctl->next;
                                     }
                                 );
-                            #}
-                            #else {
-                                #die 'WTF?';
-
-                                #foreach my $object (@$objects) {
-                                #$self->create_related($rel, %$object);
-                                #}
-                            #}
+                            }
                         }
                     }
                     else {
@@ -241,49 +266,32 @@ sub _update_related {
             if (my $rel = $self->_related->{$rel_name}) {
                 my $type = $relationships->{$rel_name}->{type};
 
-                if ($type eq 'one to one') {
-                    if ($rel->is_modified) {
-                        $rel->update(
-                            $dbh => sub {
-                                my ($dbh) = @_;
+                my $hooks = Async::Hooks->new;
 
-                                return $cb->($dbh);
+                foreach my $object (ref $rel eq 'ARRAY' ? @$rel : ($rel)) {
+                    $hooks->hook(
+                        chain => sub {
+                            my ($ctl, $args) = @_;
+
+                            if ($object->is_modified) {
+                                $object->update(
+                                    $dbh => sub {
+                                        $ctl->next;
+                                    }
+                                );
                             }
-                        );
-                    }
-                    else {
-                        return $cb->($dbh);
-                    }
-
-                }
-                else {
-                    my $hooks = Async::Hooks->new;
-
-                    foreach my $object (@$rel) {
-                        $hooks->hook(
-                            chain => sub {
-                                my ($ctl, $args) = @_;
-
-                                if ($object->is_modified) {
-                                    $object->update(
-                                        $dbh => sub {
-                                            $ctl->next;
-                                        }
-                                    );
-                                }
-                                else {
-                                    $ctl->next;
-                                }
+                            else {
+                                $ctl->next;
                             }
-                        );
-                    }
-
-                    $hooks->call(
-                        chain => [] => sub {
-                            return $cb->($dbh);
                         }
                     );
                 }
+
+                $hooks->call(
+                    chain => [] => sub {
+                        return $cb->($dbh);
+                    }
+                );
             }
         }
     }
@@ -525,6 +533,8 @@ sub update {
     $sql->bind(\@values);
     $sql->where([@{$args->{where}}]) if $args->{where};
     $sql->to_string;
+
+    warn "$sql" if $self->debug;
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
