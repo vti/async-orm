@@ -1574,6 +1574,28 @@ Async::ORM - Asynchronous Object-relational mapping
 
 =head1 DESCRIPTION
 
+=haad1 ATTRIBUTES
+
+=head2 is_in_db
+
+    my $article = Article->new;
+    print $article->is_in_db; # 0
+
+    $article->create;
+    print $article->is_in_db; # 1
+
+Returns true when object was created or loaded. Otherwise false.
+
+=head2 is_modified
+
+    my $article = Article->new;
+    print $article->is_modified; # 0
+
+    $article->set(title => 'foo');
+    print $article->is_modified; # 1
+
+Returns true when object was modified (setting columns). Otherwise false.
+
 =head1 METHODS
 
 =head2 C<new>
