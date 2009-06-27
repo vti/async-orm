@@ -11,7 +11,7 @@ use Author;
 
 my $dbh = TestDB->dbh;
 
-Author->new(name => 'foo', articles => {title => 'foo'})->create(
+Author->new(name => 'foo', articles => [{title => 'foo'}, {title => 'foo'}])->create(
     $dbh => sub {
         my ($dbh, $author) = @_;
 
@@ -26,20 +26,16 @@ Author->new(name => 'foo', articles => {title => 'foo'})->create(
         );
 
         Author->find(
-            $dbh => {where => ['articles.title' => 'foo']} => sub {
+            $dbh => {where => ['articles.title' => 'foo'], with => 'articles'} => sub {
                 my ($dbh, $authors) = @_;
 
                 is(@$authors, 1);
 
-                $authors->[0]->find_related(
-                    $dbh => 'articles' => sub {
-                        my ($dbh, $articles) = @_;
+                my $articles = $authors->[0]->related('articles');
 
-                        is(@$articles, 1);
+                is(@$articles, 2);
 
-                        is($articles->[0]->column('title'), 'foo');
-                    }
-                );
+                is($articles->[0]->column('title'), 'foo');
             }
         );
 

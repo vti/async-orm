@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 use lib 't/lib';
 
@@ -18,13 +18,20 @@ my $article_id;
 
 Author->new(
     name     => 'foo',
-    articles => {
+    articles => [
+    {
         title    => 'foo',
         comments => {content => 'bar'}
-    }
+    },
+    {
+        title    => 'bar'
+    },
+    ]
   )->create(
     $dbh => sub {
         my ($dbh, $author) = @_;
+
+        is(@{$author->related('articles')}, 2);
 
         $author_id  = $author->column('id');
         $article_id = $author->related('articles')->[0]->column('id');
@@ -42,10 +49,10 @@ Author->new(id => $author_id)->load(
 );
 
 Article->find(
-    $dbh => {where => [author_id => $author_id], single => 1} => sub {
-        my ($dbh, $article) = @_;
+    $dbh => {where => [author_id => $author_id]} => sub {
+        my ($dbh, $articles) = @_;
 
-        ok(not defined $article);
+        is_deeply($articles, []);
     }
 );
 

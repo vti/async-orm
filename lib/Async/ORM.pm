@@ -477,17 +477,21 @@ sub load {
 
             return $cb->($dbh) unless $rows && @$rows;
 
-            $self->_map_row_to_object(
-                row     => $rows->[0],
-                columns => [$sql->columns],
-                with    => $with,
-                object  => $self
-            );
+            my $object;
+            foreach my $row (@$rows) {
+                $object = $self->_map_row_to_object(
+                    row     => $row,
+                    columns => [$sql->columns],
+                    with    => $with,
+                    object  => $self,
+                    prev    => $object
+                );
+            }
 
-            $self->is_modified(0);
-            $self->is_in_db(1);
+            $object->is_in_db(1);
+            $object->is_modified(0);
 
-            return $cb->($dbh, $self);
+            return $cb->($dbh, $object);
         }
     );
 }
@@ -694,16 +698,20 @@ sub find {
             return $cb->($dbh, $single ? undef : []) unless $rows && @$rows;
 
             my $objects;
+            my $prev;
             foreach my $row (@$rows) {
                 my $object = $class->_map_row_to_object(
                     row     => $row,
                     columns => [$sql->columns],
-                    with    => $with
+                    with    => $with,
+                    prev    => $prev
                 );
                 $object->is_in_db(1);
                 $object->is_modified(0);
 
-                push @$objects, $object;
+                push @$objects, $object if !$prev || $object ne $prev;
+
+                $prev = $object;
             }
 
             return $cb->($dbh, $single ? $objects->[0] : $objects);
@@ -1163,16 +1171,29 @@ sub set_related {
 
 sub _map_row_to_object {
     my $class  = shift;
+    $class = ref($class) if ref($class);
     my %params = @_;
 
     my $row     = $params{row};
     my $with    = $params{with};
     my $columns = $params{columns};
     my $o       = $params{object};
+    my $prev    = $params{prev};
 
     my %values = map { $_ => shift @$row } @$columns;
 
     my $object = $o ? $o->init(%values) : $class->new(%values);
+
+    if ($prev) {
+        my $prev_keys = join(',',
+            map { "$_=" . $prev->column($_) } $prev->schema->primary_keys);
+        my $object_keys = join(',',
+            map { "$_=" . $object->column($_) } $object->schema->primary_keys);
+
+        if ($prev_keys eq $object_keys) {
+            $object = $prev;
+        }
+    }
 
     if ($with) {
         foreach my $rel_info (@$with) {
@@ -1189,20 +1210,29 @@ sub _map_row_to_object {
             my $relationship =
               $parent_object->schema->relationships->{$rel_info->{name}};
 
-            if (   $relationship->{type} eq 'many to one'
-                || $relationship->{type} eq 'one to one')
-            {
+            #if (   $relationship->{type} eq 'many to one'
+                #|| $relationship->{type} eq 'one to one')
+            #{
                 %values = map { $_ => shift @$row } @{$rel_info->{columns}};
 
                 if (grep { defined $values{$_} } keys %values) {
                     my $rel_object = $relationship->class->new(%values);
-                    $parent_object->_related->{$rel_info->{name}} =
-                      $rel_object;
+
+                    if (   $relationship->{type} eq 'many to one'
+                        || $relationship->{type} eq 'one to one')
+                    {
+                        $parent_object->_related->{$rel_info->{name}} =
+                          $rel_object;
+                    }
+                    else {
+                        $parent_object->_related->{$rel_info->{name}} ||= [];
+                        push @{$parent_object->_related->{$rel_info->{name}}}, $rel_object;
+                    }
                 }
-            }
-            else {
-                die $relationship->{type} . ' not supported';
-            }
+            #}
+            #else {
+                #die $relationship->{type} . ' not supported';
+            #}
         }
     }
 
@@ -1240,14 +1270,14 @@ sub _resolve_with {
                 die $class . ": unknown relationship '$name'";
             }
 
-            if (   $relationship->type eq 'many to one'
-                || $relationship->type eq 'one to one')
-            {
+            #if (   $relationship->type eq 'many to one'
+                #|| $relationship->type eq 'one to one')
+            #{
                 $sql->source($relationship->to_source);
-            }
-            else {
-                die $relationship->type . ' is not supported';
-            }
+            #}
+            #else {
+                #die $relationship->type . ' is not supported';
+            #}
 
             if ($last) {
                 my @columns;
