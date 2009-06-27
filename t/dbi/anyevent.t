@@ -7,17 +7,18 @@ use lib 't/lib';
 
 use File::Spec;
 
+use TestDB;
+
 use Async::ORM::DBI;
 use AnyEvent;
 
 use Article;
 
-my $db = File::Spec->catfile(File::Spec->tmpdir, 'anyevent-orm.db');
-
 my $dbh = Async::ORM::DBI->new(
     driver => 'Async::ORM::DBI::AnyEvent',
-    dbi    => "dbi:SQLite:$db"
+    dbi    => "dbi:SQLite:" . TestDB->database
 );
+
 my $cv = AnyEvent->condvar;
 
 Article->new(title => 'foo')->create(

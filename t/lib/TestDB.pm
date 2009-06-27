@@ -6,18 +6,18 @@ use warnings;
 use Async::ORM::DBI;
 use File::Spec;
 
-sub _database {
+sub database {
     return File::Spec->catfile(File::Spec->tmpdir, 'anyevent-orm.db');
 }
 
 sub dbh {
-    my $db = _database();
+    my $db = database();
 
     return Async::ORM::DBI->new(dbi => "dbi:SQLite:dbname=$db");
 }
 
 sub cleanup {
-    unlink _database();
+    unlink database();
 }
 
 1;

@@ -633,6 +633,7 @@ sub delete {
 
 sub find {
     my $class = shift;
+    $class = ref($class) if ref($class);
     my ($dbh, $args, $cb) = @_;
 
     ($cb, $args) = ($args, {}) unless $cb;
