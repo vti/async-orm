@@ -724,9 +724,11 @@ sub count {
 
     ($cb, $args) = ($args, {}) unless $cb;
 
+    my $pk = $class->schema->table . '.' . join(', ', $class->schema->primary_keys);
+
     my $sql = Async::ORM::SQL->build('select');
     $sql->source($class->schema->table);
-    $sql->columns(\'COUNT(*) AS count');
+    $sql->columns(\"COUNT(DISTINCT $pk)");
     $sql->to_string;
 
     if (my $sources = delete $args->{source}) {
@@ -737,13 +739,15 @@ sub count {
 
     $class->_resolve_columns($sql);
 
-    warn $sql if $class->debug;
+    $sql->to_string;
+
+    warn "$sql" if $class->debug;
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
             my ($dbh, $rows, $rv) = @_;
 
-            return $cb->($dbh, $rows->[0]->[0]);
+            return $cb->($dbh, $rows->[0]->[0] || 0);
         }
     );
 }
@@ -974,30 +978,18 @@ sub count_related {
     $args->{where} ||= [];
 
     if ($relationship->{type} eq 'many to many') {
-        die 'WTF?';
-        #my $map_from = $relationship->{map_from};
-        #my $map_to   = $relationship->{map_to};
+        my $map_from = $relationship->{map_from};
+        my $map_to   = $relationship->{map_to};
 
-        #my ($to, $from) =
-          #%{$relationship->{map_class}->schema->relationships->{$map_from}
-              #->{map}};
+        my ($to, $from) =
+          %{$relationship->map_class->schema->relationships->{$map_from}
+              ->{map}};
 
-        #push @{$params{where}},
-          #(     $relationship->map_class->schema->table . '.'
-              #. $to => $self->column($from));
+        push @{$args->{where}},
+          (     $relationship->map_class->schema->table . '.'
+              . $to => $self->column($from));
 
-        #($from, $to) =
-          #%{$relationship->{map_class}->schema->relationships->{$map_to}
-              #->{map}};
-
-        #my $table     = $relationship->class->schema->table;
-        #my $map_table = $relationship->{map_class}->schema->table;
-        #$params{source} = [
-            #{   name       => $map_table,
-                #join       => 'left',
-                #constraint => ["$table.$to" => "$map_table.$from"]
-            #}
-        #];
+        $args->{source} = [$relationship->to_self_map_source, $relationship->to_self_source];
     }
     else {
         my ($from, $to) = %{$relationship->map};
@@ -1026,19 +1018,23 @@ sub update_related {
 
     my $relationship = $self->_load_relationship($name);
 
-    my ($from, $to) = %{$relationship->{map}};
+    if ($relationship->type eq 'many to many') {
+        die 'many to many is not supported';
+    }
+    else {
+        my ($from, $to) = %{$relationship->{map}};
 
-    my $where = delete $args->{where} || [];
+        my $where = delete $args->{where} || [];
 
-    if ($relationship->where) {
-        push @$where, @{$relationship->where};
+        if ($relationship->where) {
+            push @{$args->{where}}, @{$relationship->where};
+        }
+
+        push @{$args->{where}}, ($to => $self->column($from));
     }
 
     $relationship->class->update(
-        $dbh => {
-            where => [$to => $self->column($from), @$where],
-            %$args
-          } => sub {
+        $dbh => $args => sub {
               my ($dbh, $ok) = @_;
 
               return $cb->($dbh, $self, $ok);
