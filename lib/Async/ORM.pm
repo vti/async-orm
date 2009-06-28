@@ -400,9 +400,9 @@ sub create {
 
     $dbh->exec(
         "$sql" => [@values] => sub {
-            my ($dbh, $rows, $metadata) = @_;
+            my ($dbh, $rows, $rv) = @_;
 
-            return $cb->($dbh) unless $metadata->{rv};
+            return $cb->($dbh) unless $rv;
 
             $self->is_in_db(1);
             $self->is_modified(0);
@@ -473,7 +473,7 @@ sub load {
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
-            my ($dbh, $rows, $metadata) = @_;
+            my ($dbh, $rows, $rv) = @_;
 
             return $cb->($dbh) unless $rows && @$rows;
 
@@ -542,9 +542,9 @@ sub update {
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
-            my ($dbh, $rows, $metadata) = @_;
+            my ($dbh, $rows, $rv) = @_;
 
-            return $cb->($dbh) if $metadata->{rv} eq '0E0';
+            return $cb->($dbh) if $rv eq '0E0';
 
             if (ref $self) {
                 $self->_update_related(
@@ -597,9 +597,9 @@ sub delete {
 
                 $dbh->exec(
                     "$sql" => $sql->bind => sub {
-                        my ($dbh, $rows, $metadata) = @_;
+                        my ($dbh, $rows, $rv) = @_;
 
-                        return $cb->($dbh, 0) if $metadata->{rv} eq '0E0';
+                        return $cb->($dbh, 0) if $rv eq '0E0';
 
                         return $cb->($dbh, 1);
                     }
@@ -692,7 +692,7 @@ sub find {
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
-            my ($dbh, $rows, $metadata) = @_;
+            my ($dbh, $rows, $rv) = @_;
 
             return $cb->($dbh, $single ? undef : []) unless $rows && @$rows;
 
@@ -741,7 +741,7 @@ sub count {
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
-            my ($dbh, $rows, $metadata) = @_;
+            my ($dbh, $rows, $rv) = @_;
 
             return $cb->($dbh, $rows->[0]->[0]);
         }

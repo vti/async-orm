@@ -34,9 +34,7 @@ sub exec {
     my $rv = $sth->execute(@$args) or die $sth->errstr;
 
     return $cb->(
-        $self,
-        $sth->{NUM_OF_FIELDS} ? $sth->fetchall_arrayref : undef,
-        {rv => $rv}
+        $self, $sth->{NUM_OF_FIELDS} ? $sth->fetchall_arrayref : undef, $rv
     );
 }
 
