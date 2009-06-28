@@ -18,10 +18,13 @@ sub to_source {
 
     my ($from, $to) = %{$self->map};
 
+    my $as = $self->name;
+
     return {
         name       => $rel_table,
         join       => 'left',
-        constraint => ["$rel_table.$to" => "$table.$from"]
+        as         => $as,
+        constraint => ["$as.$to" => "$table.$from"]
     };
 }
 

@@ -583,7 +583,6 @@ sub delete {
               unless $self->schema->is_primary_key($name)
                   || $self->schema->is_unique_key($name);
         }
-    #}
 
         my $sql = Async::ORM::SQL->build('delete');
         $sql->table($self->schema->table);
@@ -931,19 +930,7 @@ sub find_related {
           (     $relationship->map_class->schema->table . '.'
               . $to => $self->column($from));
 
-        #($from, $to) =
-          #%{$relationship->map_class->schema->relationships->{$map_to}->{map}};
-
-        #my $table     = $relationship->class->schema->table;
-        #my $map_table = $relationship->map_class->schema->table;
-        #$args->{source} = [
-            #{   name       => $map_table,
-                #join       => 'left',
-                #constraint => ["$table.$to" => "$map_table.$from"]
-            #}
-        #];
-
-        $args->{source} = [$relationship->to_map_source, $relationship->to_self_source];
+        $args->{source} = [$relationship->to_self_map_source, $relationship->to_self_source];
     }
     else {
         my ($from, $to) = %{$relationship->{map}};
@@ -1256,6 +1243,7 @@ sub _resolve_with {
         my $relationships = $class->schema->relationships;
         my $last          = 0;
         my $name;
+        my $rel_as;
         while (1) {
             if ($rel_info->{name} =~ s/^(\w+)\.//) {
                 $name = $1;
@@ -1276,7 +1264,7 @@ sub _resolve_with {
                 $sql->source($relationship->to_map_source);
             }
 
-            $sql->source($relationship->to_source);
+            $sql->source($relationship->to_source(rel_as => $rel_as));
 
             if ($last) {
                 my @columns;
@@ -1299,6 +1287,8 @@ sub _resolve_with {
             else {
                 $relationships = $relationship->class->schema->relationships;
             }
+
+            $rel_as = $name;
         }
     }
 }
@@ -1322,6 +1312,7 @@ sub _resolve_columns {
             }
             else {
                 my $relationships = $self->schema->relationships;
+                my $parent_prefix;
                 while ($key =~ s/^(\w+)\.//) {
                     my $prefix = $1;
 
@@ -1330,13 +1321,15 @@ sub _resolve_columns {
                             $sql->source($relationship->to_map_source);
                         }
 
-                        $sql->source($relationship->to_source);
+                        $sql->source($relationship->to_source(rel_as => $parent_prefix));
 
-                        my $rel_table = $relationship->related_table;
-                        $where->[$count] = "$rel_table.$key";
+                        my $rel_name = $relationship->name;
+                        $where->[$count] = "$rel_name.$key";
 
                         $relationships =
                           $relationship->class->schema->relationships;
+
+                        $parent_prefix = $prefix;
                     }
                 }
 

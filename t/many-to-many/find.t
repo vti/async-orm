@@ -14,13 +14,14 @@ my $dbh = TestDB->dbh;
 
 my @articles;
 
-Article->new(name => 'foo', tags => [{name => 'bar'},{name => 'baz'}])->create(
+Article->new(name => 'foo', tags => [{name => 'bar'}, {name => 'baz'}])
+  ->create(
     $dbh => sub {
         my ($dbh, $article) = @_;
 
         push @articles, $article;
     }
-);
+  );
 
 Article->find(
     $dbh => {where => ['tags.name' => 'foo']} => sub {
@@ -37,7 +38,7 @@ Article->find(
         is(@$articles, 1);
 
         my $tags = $articles->[0]->related('tags');
-        is(@$tags, 2);
+        is(@$tags,                     2);
         is($tags->[0]->column('name'), 'bar');
         is($tags->[1]->column('name'), 'baz');
     }

@@ -112,10 +112,11 @@ sub new {
     # init relationship classes
     if ($self->relationships && %{$self->relationships}) {
         foreach my $rel (keys %{$self->relationships}) {
-            $self->relationships->{$rel} =
-              Async::ORM::Relationship->build(
+            $self->relationships->{$rel} = Async::ORM::Relationship->build(
+                name => $rel,
                 %{$self->relationships->{$rel}},
-                orig_class => $for_class);
+                orig_class => $for_class
+            );
         }
     }
 
@@ -225,9 +226,11 @@ sub add_relationship {
 
     return unless $name && $options;
 
-    $self->relationships->{$name} =
-      Async::ORM::Relationship->build(%$options,
-        orig_class => $self->class);
+    $self->relationships->{$name} = Async::ORM::Relationship->build(
+        %$options,
+        name       => $name,
+        orig_class => $self->class
+    );
 }
 
 sub add_relationships {

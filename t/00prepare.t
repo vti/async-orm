@@ -107,3 +107,13 @@ CREATE TABLE `nested_comment` (
  `rgt`         INTEGER NOT NULL
 );
 
+$dbh->exec(<<"", sub {});
+DROP TABLE IF EXISTS `family`;
+
+$dbh->exec(<<"", sub {});
+CREATE TABLE `family` (
+ `id`          INTEGER PRIMARY KEY,
+ `parent_id`   INTEGER,
+ `name`        VARCHAR(255)
+);
+

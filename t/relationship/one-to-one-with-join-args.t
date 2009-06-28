@@ -5,6 +5,7 @@ use Async::ORM::Relationship::OneToOne;
 use lib 't/lib';
 
 my $rel = Async::ORM::Relationship::OneToOne->new(
+    name       => 'article',
     type       => 'one to one',
     orig_class => 'Author',
     class      => 'Article',
@@ -19,6 +20,7 @@ is_deeply(
     $rel->to_source,
     {   name       => 'article',
         join       => 'left',
+        as         => 'article',
         constraint => [
             'article.author_id' => 'author.id',
             'article.title'   => 'foo',

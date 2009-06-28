@@ -64,10 +64,13 @@ sub to_source {
     my $table = $self->class->schema->table;
     my $map_table = $self->map_class->schema->table;
 
+    my $as = $self->name;
+
     return {
         name       => $table,
+        as         => $as,
         join       => 'left',
-        constraint => ["$table.$to" => "$map_table.$from"]
+        constraint => ["$as.$to" => "$map_table.$from"]
     };
 }
 
@@ -90,6 +93,25 @@ sub to_map_source {
     };
 }
 
+sub to_self_map_source {
+    my $self = shift;
+
+    my $map_from = $self->map_from;
+    my $map_to = $self->map_to;
+
+    my ($from, $to) =
+      %{$self->map_class->schema->relationships->{$map_to}->map};
+
+    my $table = $self->class->schema->table;
+    my $map_table = $self->map_class->schema->table;
+
+    return {
+        name       => $map_table,
+        join       => 'left',
+        constraint => ["$table.$to" => "$map_table.$from"]
+    };
+}
+
 sub to_self_source {
     my $self = shift;
 
@@ -102,11 +124,35 @@ sub to_self_source {
     my $table = $self->orig_class->schema->table;
     my $map_table = $self->map_class->schema->table;
 
+    my $rel_as = $self->_rel_as;
+
     return {
         name       => $table,
+        as         => $rel_as,
         join       => 'left',
-        constraint => ["$table.$to" => "$map_table.$from"]
+        constraint => ["$rel_as.$to" => "$map_table.$from"]
     };
+}
+
+sub _rel_as {
+    my $self = shift;
+
+    my $relationship;
+
+    foreach my $rel_hash ($self->class->schema->relationships) {
+        my ($rel) = values %$rel_hash;
+
+        if (   $rel->type eq 'many to many'
+            && $rel->_map_class eq $self->map_class)
+        {
+            $relationship = $rel;
+            last;
+        }
+    }
+
+    die 'can not find reverse relationship' unless $relationship;
+
+    return $relationship->name;
 }
 
 1;

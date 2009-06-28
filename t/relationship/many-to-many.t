@@ -1,13 +1,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 
 use Async::ORM::Relationship::ManyToMany;
 
 use lib 't/lib';
 
 my $rel = Async::ORM::Relationship::ManyToMany->new(
+    name       => 'tags',
     orig_class => 'Article',
     type       => 'many to many',
     map_class  => 'ArticleTagMap',
@@ -26,11 +27,20 @@ is_deeply($rel->to_map_source,
     }
 );
 
+is_deeply($rel->to_self_map_source,
+    {
+        name       => 'article_tag_map',
+        join       => 'left',
+        constraint => ['tag.id' => 'article_tag_map.tag_id']
+    }
+);
+
 is_deeply($rel->to_source,
     {
         name       => 'tag',
+        as         => 'tags',
         join       => 'left',
-        constraint => ['tag.id' => 'article_tag_map.tag_id']
+        constraint => ['tags.id' => 'article_tag_map.tag_id']
     }
 );
 
@@ -38,6 +48,7 @@ is_deeply($rel->to_self_source,
     {
         name       => 'article',
         join       => 'left',
-        constraint => ['article.id' => 'article_tag_map.article_id']
+        as         => 'articles',
+        constraint => ['articles.id' => 'article_tag_map.article_id']
     }
 );

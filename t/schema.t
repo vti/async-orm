@@ -89,7 +89,7 @@ __PACKAGE__->schema(
 
 package main;
 
-use Test::More tests => 31;
+use Test::More tests => 32;
 
 use lib 't/lib';
 
@@ -123,7 +123,8 @@ is(Model::Options->schema->is_auto_increment('foo'), 1);
 
 my $relationships = Artist->schema->relationships;
 is(keys %$relationships, 1);
-is_deeply($relationships->{albums}->class, 'Album');
+is($relationships->{albums}->class, 'Album');
+is($relationships->{albums}->name, 'albums');
 
 $relationships = Advanced->schema->relationships;
 is(Advanced->schema->is_column('year'), 1);

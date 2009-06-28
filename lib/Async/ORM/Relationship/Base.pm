@@ -2,6 +2,11 @@ package Async::ORM::Relationship::Base;
 
 use Any::Moose;
 
+has name => (
+    is       => 'rw',
+    required => 1
+);
+
 has type => (
     is => 'rw'
 );

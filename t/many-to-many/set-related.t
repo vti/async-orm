@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 9;
 
 use lib 't/lib';
 
@@ -47,6 +47,14 @@ $articles[0]->set_related(
 
         is(@$tags, 1);
         is($tags->[0]->column('name'), 'bar');
+
+        Tag->new(name => 'foo')->load(
+            $dbh => sub {
+                my ($dbh, $tag) = @_;
+
+                ok($tag);
+            }
+        );
     }
 );
 

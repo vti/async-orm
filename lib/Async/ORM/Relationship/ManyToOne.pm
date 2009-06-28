@@ -12,13 +12,16 @@ has map => (
 
 sub to_source {
     my $self = shift;
+    my %params = @_;
 
-    my $table     = $self->orig_class->schema->table;
-    my $rel_table = $self->class->schema->table;
+    my $rel_as = $params{rel_as} || $self->orig_class->schema->table;
+    my $table = $self->class->schema->table;
 
     my ($from, $to) = %{$self->{map}};
 
-    my $constraint = ["$rel_table.$to" => "$table.$from"];
+    my $as = $self->name;
+
+    my $constraint = ["$as.$to" => "$rel_as.$from"];
 
     if ($self->join_args) {
         my $i = 0;
@@ -27,13 +30,14 @@ sub to_source {
                 push @$constraint, $value;
             }
             else {
-                push @$constraint, "$rel_table.$value";
+                push @$constraint, "$as.$value";
             }
         }
     }
 
     return {
-        name       => $rel_table,
+        name       => $table,
+        as         => $as,
         join       => 'left',
         constraint => $constraint
     };

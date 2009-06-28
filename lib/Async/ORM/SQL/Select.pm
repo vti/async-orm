@@ -37,8 +37,16 @@ sub source {
     $source = {name => $source} unless ref $source eq 'HASH';
 
     $source->{columns} ||= [];
+
+    if (my $as = $source->{as}) {
+        return $self
+          if scalar(grep { $_->{name} eq $as } @{$self->_sources})
+              || scalar(grep { $_->{as} && ($_->{as} eq $as) } @{$self->_sources});
+    }
+
     push @{$self->_sources}, $source
-      unless grep { $_->{name} eq $source->{name} } @{$self->_sources};
+      unless scalar(grep { $_->{name} eq $source->{name} }
+          @{$self->_sources}) && !$source->{as};
 
     return $self;
 }
@@ -107,7 +115,7 @@ sub to_string {
                         }
                         elsif ($need_prefix) {
                             $col_full =
-                              '`' . $source->{name} . "`.`$col_full`";
+                              '`' . ($source->{as} || $source->{name}) . "`.`$col_full`";
                         }
                         else {
                             $col_full = "`$col_full`";
@@ -206,9 +214,12 @@ sub _sources_to_string {
         $string .= ', ' unless $first || $source->{join};
 
         $string .= ' ' . uc $source->{join} . ' JOIN ' if $source->{join};
+
         $string .= '`' . $source->{name} . '`';
 
-        $string .= ' AS ' . '`' . $source->{as} . '`' if $source->{as};
+        if ($source->{as}) {
+            $string .= ' AS ' . '`' . $source->{as} . '`' ;
+        }
 
         if ($source->{constraint}) {
             $string .= ' ON ';
