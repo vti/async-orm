@@ -1209,12 +1209,14 @@ sub _map_row_to_object {
                 }
             }
 
-            my $relationship =
-              $parent_object->schema->relationships->{$rel_info->{name}};
+            foreach my $parent_object_ (
+                ref $parent_object eq 'ARRAY'
+                ? @$parent_object
+                : ($parent_object))
+            {
+                my $relationship =
+                  $parent_object_->schema->relationships->{$rel_info->{name}};
 
-            #if (   $relationship->{type} eq 'many to one'
-                #|| $relationship->{type} eq 'one to one')
-            #{
                 %values = map { $_ => shift @$row } @{$rel_info->{columns}};
 
                 if (grep { defined $values{$_} } keys %values) {
@@ -1223,18 +1225,16 @@ sub _map_row_to_object {
                     if (   $relationship->{type} eq 'many to one'
                         || $relationship->{type} eq 'one to one')
                     {
-                        $parent_object->_related->{$rel_info->{name}} =
+                        $parent_object_->_related->{$rel_info->{name}} =
                           $rel_object;
                     }
                     else {
-                        $parent_object->_related->{$rel_info->{name}} ||= [];
-                        push @{$parent_object->_related->{$rel_info->{name}}}, $rel_object;
+                        $parent_object_->_related->{$rel_info->{name}} ||= [];
+                        push @{$parent_object_->_related->{$rel_info->{name}}},
+                          $rel_object;
                     }
                 }
-            #}
-            #else {
-                #die $relationship->{type} . ' not supported';
-            #}
+            }
         }
     }
 
