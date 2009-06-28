@@ -7,58 +7,58 @@ use lib 't/lib';
 
 use TestDB;
 
-use Author;
-use AuthorAdmin;
-use Admin;
+use Article;
+use Tag;
 
 my $dbh = TestDB->dbh;
 
-my @authors;
+my @articles;
 
-Author->new(name => 'foo')->create(
+Article->new(name => 'foo')->create(
     $dbh => sub {
-        my ($dbh, $author) = @_;
+        my ($dbh, $article) = @_;
 
-        push @authors, $author;
+        push @articles, $article;
 
-        $author->set_related(
-            $dbh => 'author_admin' => {beard => 1} => sub {
-                my ($dbh, $author_admin) = @_;
+        $article->set_related(
+            $dbh => 'tags' => {name => 'foo'} => sub {
+                my ($dbh, $tags) = @_;
 
-                ok($author_admin);
-                is($author_admin->column('beard'), 1);
+                is(@$tags, 1);
+                is($tags->[0]->column('name'), 'foo');
             }
         );
     }
 );
 
-Author->new(id => $authors[0]->column('id'))->load(
-    $dbh => {with => 'author_admin'} => sub {
-        my ($dbh, $author) = @_;
+Article->new(id => $articles[0]->column('id'))->load(
+    $dbh => {with => 'tags'} => sub {
+        my ($dbh, $article) = @_;
 
-        my $author_admin = $author->related('author_admin');
-        ok($author_admin);
-        is($author_admin->column('beard'), 1);
+        my $tags = $article->related('tags');
+        is(@$tags, 1);
+        is($tags->[0]->column('name'), 'foo');
     }
 );
 
-$authors[0]->set_related(
-    $dbh => 'author_admin' => {beard => 0} => sub {
-        my ($dbh, $author_admin) = @_;
+$articles[0]->set_related(
+    $dbh => 'tags' => {name => 'bar'} => sub {
+        my ($dbh, $tags) = @_;
 
-        ok($author_admin);
-        is($author_admin->column('beard'), 0);
+        is(@$tags, 1);
+        is($tags->[0]->column('name'), 'bar');
     }
 );
 
-Author->new(id => $authors[0]->column('id'))->load(
-    $dbh => {with => 'author_admin'} => sub {
-        my ($dbh, $author) = @_;
+Article->new(id => $articles[0]->column('id'))->load(
+    $dbh => {with => 'tags'} => sub {
+        my ($dbh, $article) = @_;
 
-        my $author_admin = $author->related('author_admin');
-        ok($author_admin);
-        is($author_admin->column('beard'), 0);
+        my $tags = $article->related('tags');
+        is(@$tags, 1);
+        is($tags->[0]->column('name'), 'bar');
     }
 );
 
-$authors[0]->delete($dbh => sub { });
+$articles[0]->delete($dbh => sub { });
+Tag->delete($dbh => {where => [name => [qw/foo bar/]]} => sub {});

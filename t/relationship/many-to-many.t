@@ -1,4 +1,7 @@
-use Test::More tests => 4;
+use strict;
+use warnings;
+
+use Test::More tests => 5;
 
 use Async::ORM::Relationship::ManyToMany;
 
@@ -31,3 +34,10 @@ is_deeply($rel->to_source,
     }
 );
 
+is_deeply($rel->to_self_source,
+    {
+        name       => 'article',
+        join       => 'left',
+        constraint => ['article.id' => 'article_tag_map.article_id']
+    }
+);

@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 5;
 
 use lib 't/lib';
 
@@ -14,7 +14,7 @@ my $dbh = TestDB->dbh;
 
 my @articles;
 
-Article->new(name => 'foo', tags => {name => 'bar'})->create(
+Article->new(name => 'foo', tags => [{name => 'bar'},{name => 'baz'}])->create(
     $dbh => sub {
         my ($dbh, $article) = @_;
 
@@ -31,12 +31,17 @@ Article->find(
 );
 
 Article->find(
-    $dbh => {where => ['tags.name' => 'bar']} => sub {
+    $dbh => {with => 'tags'} => sub {
         my ($dbh, $articles) = @_;
 
         is(@$articles, 1);
+
+        my $tags = $articles->[0]->related('tags');
+        is(@$tags, 2);
+        is($tags->[0]->column('name'), 'bar');
+        is($tags->[1]->column('name'), 'baz');
     }
 );
 
 $articles[0]->delete($dbh => sub { });
-Tag->delete($dbh => {where => [name => [qw/foo/]]} => sub { });
+Tag->delete($dbh => {where => [name => [qw/bar baz/]]} => sub { });

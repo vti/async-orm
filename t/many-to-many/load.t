@@ -8,7 +8,6 @@ use lib 't/lib';
 use TestDB;
 
 use Article;
-use ArticleTagMap;
 use Tag;
 
 my $dbh = TestDB->dbh;
@@ -24,17 +23,13 @@ Article->new(name => 'foo', tags => {name => 'foo'})->create(
 );
 
 Article->new(id => $articles[0]->column('id'))->load(
-    $dbh => sub {
+    $dbh => {with => 'tags'} => sub {
         my ($dbh, $article) = @_;
 
-        $article->find_related(
-            $dbh => 'tags' => sub {
-                my ($dbh, $tags) = @_;
+        my $tags = $article->related('tags');
 
-                is(@$tags, 1);
-                is($tags->[0]->column('name'), 'foo');
-            }
-        );
+        is(@$tags, 1);
+        is($tags->[0]->column('name'), 'foo');
     }
 );
 

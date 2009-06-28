@@ -90,6 +90,25 @@ sub to_map_source {
     };
 }
 
+sub to_self_source {
+    my $self = shift;
+
+    my $map_from = $self->map_from;
+    my $map_to = $self->map_to;
+
+    my ($from, $to) =
+      %{$self->map_class->schema->relationships->{$map_from}->map};
+
+    my $table = $self->orig_class->schema->table;
+    my $map_table = $self->map_class->schema->table;
+
+    return {
+        name       => $table,
+        join       => 'left',
+        constraint => ["$table.$to" => "$map_table.$from"]
+    };
+}
+
 1;
 __END__
 

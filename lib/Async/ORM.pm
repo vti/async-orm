@@ -759,8 +759,8 @@ sub _load_relationship {
 
     my $relationship = $self->schema->relationships->{$name};
 
-    if ($relationship->{type} eq 'proxy') {
-        my $proxy_key = $relationship->{proxy_key};
+    if ($relationship->type eq 'proxy') {
+        my $proxy_key = $relationship->proxy_key;
 
         die "proxy_key is required for $name" unless $proxy_key;
 
@@ -931,17 +931,19 @@ sub find_related {
           (     $relationship->map_class->schema->table . '.'
               . $to => $self->column($from));
 
-        ($from, $to) =
-          %{$relationship->map_class->schema->relationships->{$map_to}->{map}};
+        #($from, $to) =
+          #%{$relationship->map_class->schema->relationships->{$map_to}->{map}};
 
-        my $table     = $relationship->class->schema->table;
-        my $map_table = $relationship->map_class->schema->table;
-        $args->{source} = [
-            {   name       => $map_table,
-                join       => 'left',
-                constraint => ["$table.$to" => "$map_table.$from"]
-            }
-        ];
+        #my $table     = $relationship->class->schema->table;
+        #my $map_table = $relationship->map_class->schema->table;
+        #$args->{source} = [
+            #{   name       => $map_table,
+                #join       => 'left',
+                #constraint => ["$table.$to" => "$map_table.$from"]
+            #}
+        #];
+
+        $args->{source} = [$relationship->to_map_source, $relationship->to_self_source];
     }
     else {
         my ($from, $to) = %{$relationship->{map}};
@@ -1270,14 +1272,11 @@ sub _resolve_with {
                 die $class . ": unknown relationship '$name'";
             }
 
-            #if (   $relationship->type eq 'many to one'
-                #|| $relationship->type eq 'one to one')
-            #{
-                $sql->source($relationship->to_source);
-            #}
-            #else {
-                #die $relationship->type . ' is not supported';
-            #}
+            if ($relationship->type eq 'many to many') {
+                $sql->source($relationship->to_map_source);
+            }
+
+            $sql->source($relationship->to_source);
 
             if ($last) {
                 my @columns;

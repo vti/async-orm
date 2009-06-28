@@ -15,7 +15,7 @@ my $dbh = TestDB->dbh;
 
 my @articles;
 
-Article->new(name => 'foo', tags => {name => 0})->create(
+Article->new(name => 'foo', tags => {name => 'foo'})->create(
     $dbh => sub {
         my ($dbh, $article) = @_;
 
@@ -32,12 +32,12 @@ Article->new(id => $articles[0]->column('id'))->load(
                 my ($dbh, $tags) = @_;
 
                 is(@$tags, 1);
-                is($tags->[0]->column('name'), 0);
+                is($tags->[0]->column('name'), 'foo');
 
                 $tags = $article->related('tags');
 
                 is(@$tags, 1);
-                is($tags->[0]->column('name'), 0);
+                is($tags->[0]->column('name'), 'foo');
             }
         );
     }
