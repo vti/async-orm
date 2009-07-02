@@ -519,7 +519,7 @@ sub update {
         $args->{where} = [map { $_ => $self->column($_) } $self->schema->primary_keys];
 
         @columns =
-          grep { !$self->schema->is_primary_key($_) } $self->schema->columns;
+          grep { !$self->schema->is_primary_key($_) } $self->columns;
         @values = map { $self->column($_) } @columns;
     }
     else {
