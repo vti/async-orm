@@ -9,19 +9,45 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::Relationship::OneToOne - one to one relationship for Async::ORM
 
 =head1 SYNOPSIS
 
+    package Author;
+
+    use Any::Moose;
+
+    extends 'Async::ORM';
+
+    __PACKAGE__->schema(
+        table          => 'author',
+        columns        => [qw/id name password/],
+        primary_keys   => ['id'],
+        auto_increment => 'id',
+        unique_keys    => 'name',
+
+        relationships => {
+            author_admin => {
+                type  => 'one to one',
+                class => 'AuthorAdmin',
+                map   => {id => 'author_id'}
+            }
+        }
+    );
+
+    1;
+
 =head1 DESCRIPTION
+
+One to one relationship for L<Async::ORM>.
 
 =head1 ATTRIBUTES
 
-=head2 C<attr>
+Inherits everything from L<Async::ORM::Relationship::ManyToOne>.
 
 =head1 METHODS
 
-=head2 C<new>
+Inherits everything from L<Async::ORM::Relationship::ManyToOne>.
 
 =head1 AUTHOR
 

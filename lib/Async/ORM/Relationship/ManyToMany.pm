@@ -160,19 +160,57 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::Relationship::ManyToMany - many to many relationship for Async::ORM
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
+Many to one relationship for L<Async::ORM>.
+
 =head1 ATTRIBUTES
 
-=head2 C<attr>
+=head2 C<map_from>
+
+Relationship name of original class.
+
+=head2 C<map_to>
+
+Relationship name of related class.
 
 =head1 METHODS
 
 =head2 C<new>
+
+Returns a new L<Async::ORM::Relationship::ManyToMany> instance.
+
+=head2 C<map_class>
+
+Returns and automatically loads a map class.
+
+=head2 C<class>
+
+Returns and automatically loads related class.
+
+=head2 C<to_source>
+
+Returns generated join arguments that are passed to the sql generator. Used
+internally.
+
+=head2 C<to_map_source>
+
+Returns generated join arguments that are passed to the sql generator. Used
+internally.
+
+=head2 C<to_self_map_source>
+
+Returns generated join arguments that are passed to the sql generator. Used
+internally.
+
+=head2 C<to_self_source>
+
+Returns generated join arguments that are passed to the sql generator. Used
+internally.
 
 =head1 AUTHOR
 

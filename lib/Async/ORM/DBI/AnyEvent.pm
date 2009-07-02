@@ -74,19 +74,72 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::DBI::AnyEvent - AnyEvent wrapper for Async::ORM
 
 =head1 SYNOPSIS
 
+    my $dbh = Async::ORM::DBI->new(
+        driver => 'Async::ORM::DBI::AnyEvent',
+        dbi    => "dbi:SQLite:test.db"
+    );
+
+    my $cv = AnyEvent->condvar;
+
+    Article->new(title => 'foo')->create(
+        $dbh => sub {
+            my ($dbh, $article) = @_;
+
+            $cv->send;
+        }
+    );
+
+    $cv->recv;
+
 =head1 DESCRIPTION
+
+This is an AnyEvent::DBI wrapper for Async::ORM.
 
 =head1 ATTRIBUTES
 
-=head2 C<attr>
+=head2 C<dbh>
+
+    my $dbh = Async::ORM::DBI->new(
+        driver => 'Async::ORM::DBI::AnyEvent',
+        dbi    => "dbi:SQLite:table.db"
+    );
+    my $original_dbh = $dbh->dbh;
+
+Holds original DBI object.
 
 =head1 METHODS
 
 =head2 C<new>
+
+Returns new Async::ORM::DBI::AnyEvent instance.
+
+=head2 C<BUILD>
+
+Creates internal L<AnyEvent::DBI> object. Used internally.
+
+=head2 C<begin_work>
+
+A wrapper for B<begin_work>.
+
+=head2 C<commit>
+
+A wrapper for B<commit>.
+
+=head2 C<exec>
+
+A wrapper for B<exec>.
+
+=head2 C<func>
+
+A wrapper for B<func>.
+
+=head2 C<rollback>
+
+A wrapper for B<rollback>.
 
 =head1 AUTHOR
 

@@ -9,18 +9,12 @@ use DBI;
 sub BUILD {
     my $self = shift;
 
-    $self->connect if $self->dbi;
-
-    return $self;
-}
-
-sub connect {
-    my $self = shift;
-
     my $dbh = DBI->connect($self->dbi, $self->user, $self->pass, $self->attr)
       or die $DBI::errstr;
 
     $self->dbh($dbh);
+
+    return $self;
 }
 
 sub exec {
@@ -109,15 +103,29 @@ Holds original DBI object.
 
 Returns new L<Async::ORM::DBI::Simple> instance.
 
+=head2 C<BUILD>
+
+Creates internal L<DBI> object. Used internally.
+
 =head2 C<begin_work>
 
-=head2 C<rollback>
+A wrapper for B<begin_work>.
 
 =head2 C<commit>
 
+A wrapper for B<commit>.
+
 =head2 C<exec>
 
+A wrapper for B<exec>.
+
 =head2 C<func>
+
+A wrapper for B<func>.
+
+=head2 C<rollback>
+
+A wrapper for B<rollback>.
 
 =head1 AUTHOR
 

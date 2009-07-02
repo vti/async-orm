@@ -23,19 +23,23 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::Relationship - Relationships for Async::ORM
 
 =head1 SYNOPSIS
 
+    my $rel = Async::ORM::Relationship->build(name => 'foo', type => 'many to one');
+
 =head1 DESCRIPTION
 
-=head1 ATTRIBUTES
-
-=head2 C<attr>
+    This is a relationship factory that is used internally.
 
 =head1 METHODS
 
-=head2 C<new>
+=head2 C<build>
+
+Returns a new relationship instance. Could be one of
+L<Async::ORM::Relationship::OneToOne>, L<Async::ORM::Relationship::OneToMany>,
+L<Async::ORM::Relationship::ManyToOne>, L<Async::ORM::Relationship::ManyToMany>.
 
 =head1 AUTHOR
 

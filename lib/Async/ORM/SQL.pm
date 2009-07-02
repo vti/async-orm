@@ -21,19 +21,27 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::SQL - SQL factory for Async::ORM
 
 =head1 SYNOPSIS
 
+    my $sql = Async::ORM::SQL->build('select');
+
+    $sql = Async::ORM::SQL->build('insert');
+    $sql->table('foo');
+    $sql->columns([qw/a b c/]);
+    $sql->bind([qw/a b c/]);
+
 =head1 DESCRIPTION
 
-=head1 ATTRIBUTES
-
-=head2 C<attr>
+This an SQL factory for L<Async::ORM>.
 
 =head1 METHODS
 
-=head2 C<new>
+=head2 C<build>
+
+Returns a new instance of L<Async::ORM::SQL::Select>, L<Async::ORM::SQL::Insert>,
+L<Async::ORM::SQL::Update> or L<Async::ORM::SQL::Delete>.
 
 =head1 AUTHOR
 

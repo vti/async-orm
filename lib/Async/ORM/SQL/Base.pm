@@ -137,19 +137,31 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::SQL::Base - a base sql generator class for Async::ORM
 
 =head1 SYNOPSIS
 
+Used internally.
+
 =head1 DESCRIPTION
+
+This is a base sql generator class for L<Async::ORM>.
 
 =head1 ATTRIBUTES
 
-=head2 C<attr>
+=head2 C<bind>
+
+Holds bind arguments.
 
 =head1 METHODS
 
-=head2 C<new>
+=head2 C<merge>
+
+Merges sql params.
+
+=head2 C<to_string>
+
+Converts instance to string.
 
 =head1 AUTHOR
 

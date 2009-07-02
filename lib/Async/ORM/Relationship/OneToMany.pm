@@ -33,19 +33,53 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::Relationship::OneToMany - one to many relationship for Async::ORM
 
 =head1 SYNOPSIS
 
+    package Article;
+
+    use Any::Moose;
+
+    extends 'Async::ORM';
+
+    __PACKAGE__->schema(
+        table          => 'article',
+        columns        => [qw/ id category_id author_id title /],
+        primary_keys   => ['id'],
+        auto_increment => 'id',
+
+        relationships => {
+            comments => {
+                type  => 'one to many',
+                class => 'Comment',
+                map   => {id => 'comment_id'}
+            }
+        }
+    );
+
+    1;
+
 =head1 DESCRIPTION
+
+One to many relationship for L<Async::ORM>.
 
 =head1 ATTRIBUTES
 
-=head2 C<attr>
+=head2 C<map>
+
+Hash reference holding columns mappings.
 
 =head1 METHODS
 
 =head2 C<new>
+
+Returns new L<Async::ORM::Relationship::OneToMany> instance.
+
+=head2 C<to_source>
+
+Returns generated join arguments that are passed to the sql generator. Used
+internally.
 
 =head1 AUTHOR
 

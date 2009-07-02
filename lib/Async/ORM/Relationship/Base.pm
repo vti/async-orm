@@ -82,19 +82,61 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::Relationship::Base - A base class for Async::ORM relationships
 
 =head1 SYNOPSIS
 
+    package My::Relationship;
+
+    use Any::Moose;
+
+    extends 'Async::ORM::Relationship::Base';
+
+    ...
+
 =head1 DESCRIPTION
+
+This is a base class for all L<Async::ORM> relationships.
 
 =head1 ATTRIBUTES
 
-=head2 C<attr>
+=head2 C<new>
+
+Returns new L<Async::ORM::Relationship::Base> instance.
+
+=head2 C<name>
+
+Holds relationship name.
+
+=head2 C<type>
+
+Holds relationship type.
+
+=head2 C<with>
+
+Holds relationships that are fetched automatically.
+
+=head2 C<where>
+
+Array reference that is passed to every where clause.
+
+=head2 C<join_args>
+
+Despite of automatic joins you can specify additional join args.
 
 =head1 METHODS
 
-=head2 C<new>
+=head2 C<orig_class>
+
+Returns original class automatically loading it.
+
+=head2 C<class>
+
+Returns related class automatically loading it.
+
+=head2 C<related_table>
+
+Returns related table name.
 
 =head1 AUTHOR
 
