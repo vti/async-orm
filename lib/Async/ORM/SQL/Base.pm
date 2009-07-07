@@ -48,15 +48,15 @@ sub _where_to_string {
         while (my ($key, $value) = @{$where}[$count, $count + 1]) {
             last unless $key;
 
+            my $logic = $self->where_logic || 'AND';
+            $string .= " $logic " unless $count == 0;
+
             if (ref $key eq 'SCALAR') {
                 $string .= $$key;
 
                 $count++;
             }
             else {
-                my $logic = $self->where_logic || 'AND';
-                $string .= " $logic " unless $count == 0;
-
                 if ($key =~ s/^-//) {
                     if ($key eq 'or' || $key eq 'and') {
                         $self->where_logic(uc $key);

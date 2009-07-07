@@ -1,4 +1,4 @@
-use Test::More tests => 14;
+use Test::More tests => 16;
 
 use Async::ORM::SQL;
 
@@ -52,4 +52,11 @@ $sql->source('table');
 $sql->columns('foo');
 $sql->where(['foo.id' => {'>' => 2}]);
 is("$sql", "SELECT `foo` FROM `table` WHERE (`foo`.`id` > ?)");
+is_deeply($sql->bind, [qw/ 2 /]);
+
+$sql = Async::ORM::SQL->build('select');
+$sql->source('table');
+$sql->columns('foo');
+$sql->where(['foo.id' => 2, \"a = 'b'"]);
+is("$sql", "SELECT `foo` FROM `table` WHERE (`foo`.`id` = ? AND a = 'b')");
 is_deeply($sql->bind, [qw/ 2 /]);
