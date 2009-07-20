@@ -1405,7 +1405,7 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package Article;
 
-    use Mouse;
+    use Any::Moose;
 
     extends 'Async::ORM';
 
@@ -1443,7 +1443,7 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package ArticleTagMap;
 
-    use Mouse;
+    use Any::Moose;
 
     extends 'Async::ORM';
 
@@ -1468,7 +1468,7 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package Tag;
 
-    use Mouse;
+    use Any::Moose;
 
     extends 'Async::ORM';
 
@@ -1491,7 +1491,7 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package Author;
 
-    use Mouse;
+    use Any::Moose;
 
     extends 'Async::ORM';
 
@@ -1518,7 +1518,7 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package Comment;
 
-    use Mouse;
+    use Any::Moose;
 
     extends 'Async::ORM';
 

@@ -282,7 +282,7 @@ Async::ORM::Schema - Schema class
 
     package Article;
 
-    use Mouse;
+    use Any::Moose;
 
     extends 'Async::ORM';
 

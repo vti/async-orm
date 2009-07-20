@@ -14,7 +14,9 @@ WriteMakefile(
     PL_FILES  => {},
     PREREQ_PM => {
         'Test::More'    => 0,
-        'Any::Moose'    => 0
+        'Any::Moose'    => 0,
+        'Async::Hooks'  => 0,
+        'DBI'           => 0
     },
     dist  => {COMPRESS => 'gzip -9f', SUFFIX => 'gz'},
     clean => {FILES    => 'Async-ORM-*'}

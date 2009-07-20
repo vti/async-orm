@@ -54,7 +54,7 @@ Async::ORM::Relationship::ManyToOne - many to one relationship for Async::ORM
 
     package Article;
 
-    use Mouse;
+    use Any::Moose;
 
     extends 'Async::ORM';
 
