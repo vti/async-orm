@@ -12,20 +12,6 @@ has columns => (
     default => sub { [] }
 );
 
-has bind => (
-    isa     => 'ArrayRef',
-    is      => 'rw',
-    default => sub { [] }
-);
-
-sub add_columns {
-    my $self = shift;
-
-    return unless @_;
-
-    push @{$self->columns}, @_;
-}
-
 sub to_string {
     my $self = shift;
 
@@ -58,19 +44,29 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::SQL::Insert - SQL insert for Async::ORM
 
 =head1 SYNOPSIS
+
+    This is used internally.
 
 =head1 DESCRIPTION
 
 =head1 ATTRIBUTES
 
-=head2 C<attr>
+=head2 C<table>
+
+Table name.
+
+=head2 C<columns>
+
+Column values.
 
 =head1 METHODS
 
-=head2 C<new>
+=head2 C<to_string>
+
+String representation.
 
 =head1 AUTHOR
 

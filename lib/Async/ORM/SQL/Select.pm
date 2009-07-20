@@ -266,19 +266,57 @@ __END__
 
 =head1 NAME
 
-Async::ORM - Asynchronous Object-relational mapping
+Async::ORM::SQL::Select - SQL select for Async::ORM
 
 =head1 SYNOPSIS
+
+    This is used internally.
 
 =head1 DESCRIPTION
 
 =head1 ATTRIBUTES
 
-=head2 C<attr>
+=head2 <where>
+
+WHERE clause.
+
+=head2 <where_logic>
+
+WHERE clause logic (AND, OR).
+
+=head2 <order_by>
+
+ORDER BY
+
+=head2 <limit>
+
+LIMIT
+
+=head2 <offset>
+
+OFFSET
+
+=head2 <group_by>
+
+GROUP BY
+
+=head2 <having>
+
+HAVING
 
 =head1 METHODS
 
-=head2 C<new>
+=head2 C<source>
+
+Used for joins.
+
+=head2 C<columns>
+
+Columns.
+
+=head2 C<to_string>
+
+String representation.
 
 =head1 AUTHOR
 
