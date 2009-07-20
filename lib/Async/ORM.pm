@@ -6,7 +6,7 @@ use Async::Hooks;
 use Async::ORM::SQL;
 use Async::ORM::Schema;
 
-our $VERSION = '0.500';
+our $VERSION = '0.501';
 
 has is_in_db => (
     isa     => 'Bool',
