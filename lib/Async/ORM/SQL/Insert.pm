@@ -1,16 +1,20 @@
 package Async::ORM::SQL::Insert;
 
-use Any::Moose;
+use strict;
+use warnings;
 
-extends 'Async::ORM::SQL::Base';
+use base 'Async::ORM::SQL::Base';
 
-has table => (is => 'rw');
+sub new {
+    my $self = shift->SUPER::new(@_);
 
-has columns => (
-    isa     => 'ArrayRef',
-    is      => 'rw',
-    default => sub { [] }
-);
+    $self->{columns} ||= [];
+
+    return $self;
+}
+
+sub table   { @_ > 1 ? $_[0]->{table}   = $_[1] : $_[0]->{table} }
+sub columns { @_ > 1 ? $_[0]->{columns} = $_[1] : $_[0]->{columns} }
 
 sub to_string {
     my $self = shift;
@@ -70,11 +74,11 @@ String representation.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

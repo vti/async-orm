@@ -1,13 +1,14 @@
 package Async::ORM::DBI::Simple;
 
-use Any::Moose;
+use strict;
+use warnings;
 
-extends 'Async::ORM::DBI::Abstract';
+use base 'Async::ORM::DBI::Abstract';
 
 use DBI;
 
-sub BUILD {
-    my $self = shift;
+sub new {
+    my $self = shift->SUPER::new(@_);
 
     my $dbh = DBI->connect($self->dbi, $self->user, $self->pass, $self->attr)
       or die $DBI::errstr;
@@ -70,8 +71,6 @@ sub func {
     return $cb->($self, $rv);
 }
 
-__PACKAGE__->meta->make_immutable;
-
 1;
 __END__
 
@@ -129,11 +128,11 @@ A wrapper for B<rollback>.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

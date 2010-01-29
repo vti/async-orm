@@ -1,14 +1,19 @@
 package Async::ORM::Relationship::OneToMany;
 
-use Any::Moose;
+use strict;
+use warnings;
 
-extends 'Async::ORM::Relationship::Base';
+use base 'Async::ORM::Relationship::Base';
 
-has map => (
-    isa     => 'HashRef',
-    is      => 'rw',
-    default => sub { {} }
-);
+sub new {
+    my $self = shift->SUPER::new(@_);
+
+    $self->{map} ||= {};
+
+    return $self;
+}
+
+sub map { @_ > 1 ? $_[0]->{map} = $_[1] : $_[0]->{map} }
 
 sub to_source {
     my $self = shift;
@@ -39,9 +44,10 @@ Async::ORM::Relationship::OneToMany - one to many relationship for Async::ORM
 
     package Article;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM';
+    use base 'Async::ORM';
 
     __PACKAGE__->schema(
         table          => 'article',
@@ -83,11 +89,11 @@ internally.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

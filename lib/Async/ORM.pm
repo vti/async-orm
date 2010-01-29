@@ -1,42 +1,24 @@
 package Async::ORM;
 
-use Any::Moose;
+use strict;
+use warnings;
 
 use Async::Hooks;
 use Async::ORM::SQL;
 use Async::ORM::Schema;
 
-our $VERSION = '0.501';
+use constant DEBUG => $ENV{ASYNC_ORM_DEBUG} || 0;
 
-has is_in_db => (
-    isa     => 'Bool',
-    is      => 'rw',
-    default => 1
-);
-
-has is_modified => (
-    isa     => 'Bool',
-    is      => 'rw',
-    default => 0
-);
-
-has _related => (
-    isa     => 'HashRef',
-    is      => 'rw',
-    default => sub { {} }
-);
-
-has _columns => (
-    isa     => 'HashRef',
-    is      => 'rw',
-    default => sub { {} }
-);
-
-sub debug { $ENV{ASYNC_ORM_DEBUG} || 0 }
+our $VERSION = '0.990101';
 
 sub new {
     my $class = shift;
-    my $self  = $class->SUPER::new();
+
+    my $self = {};
+    bless $self, $class;
+
+    $self->_related({});
+    $self->_columns({});
 
     $self->init(@_);
     $self->is_in_db(0);
@@ -44,6 +26,15 @@ sub new {
 
     return $self;
 }
+
+sub is_in_db { @_ > 1 ? $_[0]->{is_in_db} = $_[1] : $_[0]->{is_in_db} }
+
+sub is_modified {
+    @_ > 1 ? $_[0]->{is_modified} = $_[1] : $_[0]->{is_modified};
+}
+
+sub _related { @_ > 1 ? $_[0]->{_related} = $_[1] : $_[0]->{_related} }
+sub _columns { @_ > 1 ? $_[0]->{_columns} = $_[1] : $_[0]->{_columns} }
 
 sub init {
     my $self = shift;
@@ -56,7 +47,7 @@ sub init {
         elsif (
             !defined $self->column($key)
             && defined(
-                my $default = $self->schema->_columns_map->{$key}->{default}
+                my $default = $self->schema->columns_map->{$key}->{default}
             )
           )
         {
@@ -98,7 +89,10 @@ sub columns {
             push @columns, $key;
         }
         elsif (
-            defined(my $default = $self->schema->_columns_map->{$key}->{default}))
+            defined(
+                my $default = $self->schema->columns_map->{$key}->{default}
+            )
+          )
         {
             $columns->{$key} = $default;
             push @columns, $key;
@@ -216,7 +210,7 @@ sub _create_related {
 
                                 $hooks->call(
                                     chain => [] => sub {
-                                        $self->related( $rel_name => $objects);
+                                        $self->related($rel_name => $objects);
                                         $ctl->next;
                                     }
                                 );
@@ -226,7 +220,8 @@ sub _create_related {
                                     $dbh => $rel_name => $data->[0] => sub {
                                         my ($dbh, $rel_object) = @_;
 
-                                        $self->related($rel_name => $rel_object);
+                                        $self->related(
+                                            $rel_name => $rel_object);
 
                                         $ctl->next;
                                     }
@@ -311,7 +306,7 @@ sub _delete_related {
         my $hooks = Async::Hooks->new;
 
         my @rel_names = grep {
-            $relationships->{$_}->{type}      eq 'many to many'
+                 $relationships->{$_}->{type} eq 'many to many'
               || $relationships->{$_}->{type} eq 'one to one'
               || $relationships->{$_}->{type} eq 'one to many'
         } (keys %{$relationships});
@@ -396,7 +391,7 @@ sub create {
 
     my @values = map { $self->column($_) } $self->columns;
 
-    warn "$sql" if $self->debug;
+    warn "$sql" if DEBUG;
 
     $dbh->exec(
         "$sql" => [@values] => sub {
@@ -469,7 +464,7 @@ sub load {
     }
 
     $sql->to_string;
-    warn "$sql" if $self->debug;
+    warn "$sql" if DEBUG;
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
@@ -516,7 +511,8 @@ sub update {
             );
         }
 
-        $args->{where} = [map { $_ => $self->column($_) } $self->schema->primary_keys];
+        $args->{where} =
+          [map { $_ => $self->column($_) } $self->schema->primary_keys];
 
         @columns =
           grep { !$self->schema->is_primary_key($_) } $self->columns;
@@ -527,7 +523,7 @@ sub update {
 
         while (my ($key, $value) = each %{$args->{set}}) {
             push @columns, $key;
-            push @values, $value;
+            push @values,  $value;
         }
     }
 
@@ -538,7 +534,7 @@ sub update {
     $sql->where([@{$args->{where}}]) if $args->{where};
     $sql->to_string;
 
-    warn "$sql" if $self->debug;
+    warn "$sql" if DEBUG;
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
@@ -569,7 +565,8 @@ sub delete {
     ($cb, $args) = ($args, {}) unless $cb;
 
     if (ref $self && !%$args) {
-        $args->{where} = [map { $_ => $self->column($_) } $self->schema->primary_keys];
+        $args->{where} =
+          [map { $_ => $self->column($_) } $self->schema->primary_keys];
 
         my %map = @{$args->{where}};
 
@@ -589,7 +586,7 @@ sub delete {
         $sql->where([@{$args->{where}}]) if $args->{where};
         $sql->to_string;
 
-        warn "$sql" if $self->debug;
+        warn "$sql" if DEBUG;
 
         $self->_delete_related(
             $dbh => sub {
@@ -688,7 +685,7 @@ sub find {
     $sql->limit(1) if $single;
     $sql->to_string;
 
-    warn "$sql" if $class->debug;
+    warn "$sql" if DEBUG;
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
@@ -724,7 +721,8 @@ sub count {
 
     ($cb, $args) = ($args, {}) unless $cb;
 
-    my $pk = $class->schema->table . '.' . join(', ', $class->schema->primary_keys);
+    my $pk =
+      $class->schema->table . '.' . join(', ', $class->schema->primary_keys);
 
     my $sql = Async::ORM::SQL->build('select');
     $sql->source($class->schema->table);
@@ -741,7 +739,7 @@ sub count {
 
     $sql->to_string;
 
-    warn "$sql" if $class->debug;
+    warn "$sql" if DEBUG;
 
     $dbh->exec(
         "$sql" => $sql->bind => sub {
@@ -805,18 +803,19 @@ sub create_related {
                 my ($dbh, $object) = @_;
 
                 if ($object) {
-                    return  $cb->($dbh, $object);
+                    return $cb->($dbh, $object);
                 }
                 else {
                     my $map_from = $relationship->map_from;
                     my $map_to   = $relationship->map_to;
 
                     my ($from_foreign_pk, $from_pk) =
-                      %{$relationship->map_class->schema->relationships->{$map_from}
-                          ->{map}};
+                      %{$relationship->map_class->schema->relationships
+                          ->{$map_from}->{map}};
 
                     my ($to_foreign_pk, $to_pk) =
-                      %{$relationship->map_class->schema->relationships->{$map_to}->{map}};
+                      %{$relationship->map_class->schema->relationships
+                          ->{$map_to}->{map}};
 
                     $relationship->class->new(%$args)->load(
                         $dbh => sub {
@@ -934,7 +933,8 @@ sub find_related {
           (     $relationship->map_class->schema->table . '.'
               . $to => $self->column($from));
 
-        $args->{source} = [$relationship->to_self_map_source, $relationship->to_self_source];
+        $args->{source} =
+          [$relationship->to_self_map_source, $relationship->to_self_source];
     }
     else {
         my ($from, $to) = %{$relationship->{map}};
@@ -960,7 +960,7 @@ sub find_related {
 
     $relationship->class->find(
         $dbh => $args => sub {
-            my ($dbh , $objects) = @_;
+            my ($dbh, $objects) = @_;
 
             return $cb->($dbh, $objects);
         }
@@ -989,7 +989,8 @@ sub count_related {
           (     $relationship->map_class->schema->table . '.'
               . $to => $self->column($from));
 
-        $args->{source} = [$relationship->to_self_map_source, $relationship->to_self_source];
+        $args->{source} =
+          [$relationship->to_self_map_source, $relationship->to_self_source];
     }
     else {
         my ($from, $to) = %{$relationship->map};
@@ -1035,9 +1036,9 @@ sub update_related {
 
     $relationship->class->update(
         $dbh => $args => sub {
-              my ($dbh, $ok) = @_;
+            my ($dbh, $ok) = @_;
 
-              return $cb->($dbh, $self, $ok);
+            return $cb->($dbh, $self, $ok);
         }
     );
 }
@@ -1155,7 +1156,7 @@ sub set_related {
 }
 
 sub _map_row_to_object {
-    my $class  = shift;
+    my $class = shift;
     $class = ref($class) if ref($class);
     my %params = @_;
 
@@ -1173,7 +1174,8 @@ sub _map_row_to_object {
         my $prev_keys = join(',',
             map { "$_=" . $prev->column($_) } $prev->schema->primary_keys);
         my $object_keys = join(',',
-            map { "$_=" . $object->column($_) } $object->schema->primary_keys);
+            map { "$_=" . $object->column($_) }
+              $object->schema->primary_keys);
 
         if ($prev_keys eq $object_keys) {
             $object = $prev;
@@ -1186,8 +1188,7 @@ sub _map_row_to_object {
 
             if ($rel_info->{subwith}) {
                 foreach my $subwith (@{$rel_info->{subwith}}) {
-                    $parent_object =
-                      $parent_object->_related->{$subwith};
+                    $parent_object = $parent_object->_related->{$subwith};
                     die "load $subwith first" unless $parent_object;
                 }
             }
@@ -1195,7 +1196,8 @@ sub _map_row_to_object {
             foreach my $parent_object_ (
                 ref $parent_object eq 'ARRAY'
                 ? @$parent_object
-                : ($parent_object))
+                : ($parent_object)
+              )
             {
                 my $relationship =
                   $parent_object_->schema->relationships->{$rel_info->{name}};
@@ -1213,7 +1215,8 @@ sub _map_row_to_object {
                     }
                     else {
                         $parent_object_->_related->{$rel_info->{name}} ||= [];
-                        push @{$parent_object_->_related->{$rel_info->{name}}},
+                        push
+                          @{$parent_object_->_related->{$rel_info->{name}}},
                           $rel_object;
                     }
                 }
@@ -1317,7 +1320,11 @@ sub _resolve_columns {
                             $sql->source($relationship->to_map_source);
                         }
 
-                        $sql->source($relationship->to_source(rel_as => $parent_prefix));
+                        $sql->source(
+                            $relationship->to_source(
+                                rel_as => $parent_prefix
+                            )
+                        );
 
                         my $rel_name = $relationship->name;
                         $where->[$count] = "$rel_name.$key";
@@ -1405,9 +1412,10 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package Article;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM';
+    use base 'Async::ORM';
 
     __PACKAGE__->schema(
         table          => 'article',
@@ -1443,9 +1451,10 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package ArticleTagMap;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM';
+    use base 'Async::ORM';
 
     __PACKAGE__->schema(
         table        => 'article_tag_map',
@@ -1468,9 +1477,10 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package Tag;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM';
+    use base 'Async::ORM';
 
     __PACKAGE__->schema(
         table          => 'tag',
@@ -1491,9 +1501,10 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package Author;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM';
+    use base 'Async::ORM';
 
     __PACKAGE__->schema(
         table          => 'author',
@@ -1518,9 +1529,10 @@ Async::ORM - Asynchronous Object-relational mapping
 
     package Comment;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM';
+    use base 'Async::ORM';
 
     __PACKAGE__->schema(
         table        => 'comment',
@@ -1898,7 +1910,7 @@ Serializes object to hash. All prefetched objects are serialized also.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 CREDITS
 
@@ -1906,7 +1918,7 @@ In alphabetical order:
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

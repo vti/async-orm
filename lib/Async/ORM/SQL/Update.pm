@@ -1,20 +1,25 @@
 package Async::ORM::SQL::Update;
 
-use Any::Moose;
+use strict;
+use warnings;
 
-extends 'Async::ORM::SQL::Base';
+use base 'Async::ORM::SQL::Base';
 
-has table => (is => 'rw');
+sub new {
+    my $self = shift->SUPER::new(@_);
 
-has where_logic => (is => 'rw');
+    $self->{columns} ||= [];
 
-has where => (is => 'rw');
+    return $self;
+}
 
-has columns => (
-    isa     => 'ArrayRef',
-    is      => 'rw',
-    default => sub { [] }
-);
+sub table { @_ > 1 ? $_[0]->{table} = $_[1] : $_[0]->{table} }
+sub where { @_ > 1 ? $_[0]->{where} = $_[1] : $_[0]->{where} }
+
+sub where_logic {
+    @_ > 1 ? $_[0]->{where_logic} = $_[1] : $_[0]->{where_logic};
+}
+sub columns { @_ > 1 ? $_[0]->{columns} = $_[1] : $_[0]->{columns} }
 
 sub to_string {
     my $self = shift;
@@ -94,11 +99,11 @@ String representation.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

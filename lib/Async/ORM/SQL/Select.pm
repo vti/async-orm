@@ -1,34 +1,33 @@
 package Async::ORM::SQL::Select;
 
-use Any::Moose;
+use strict;
+use warnings;
 
-extends 'Async::ORM::SQL::Base';
+use base 'Async::ORM::SQL::Base';
 
-has group_by => (is => 'rw');
+sub new {
+    my $self = shift->SUPER::new(@_);
 
-has having => (is => 'rw');
+    $self->{_sources} ||= [];
+    $self->{_columns} ||= [];
 
-has order_by => (is => 'rw');
+    return $self;
+}
 
-has limit => (is => 'rw');
+sub with     { @_ > 1 ? $_[0]->{with}     = $_[1] : $_[0]->{with} }
+sub group_by { @_ > 1 ? $_[0]->{group_by} = $_[1] : $_[0]->{group_by} }
+sub having   { @_ > 1 ? $_[0]->{having}   = $_[1] : $_[0]->{having} }
+sub order_by { @_ > 1 ? $_[0]->{order_by} = $_[1] : $_[0]->{order_by} }
+sub limit    { @_ > 1 ? $_[0]->{limit}    = $_[1] : $_[0]->{limit} }
+sub offset   { @_ > 1 ? $_[0]->{offset}   = $_[1] : $_[0]->{offset} }
+sub where    { @_ > 1 ? $_[0]->{where}    = $_[1] : $_[0]->{where} }
 
-has offset => (is => 'rw');
+sub where_logic {
+    @_ > 1 ? $_[0]->{where_logic} = $_[1] : $_[0]->{where_logic};
+}
 
-has _sources => (
-    isa     => 'ArrayRef',
-    is      => 'rw',
-    default => sub { [] }
-);
-
-has _columns => (
-    isa     => 'ArrayRef',
-    is      => 'rw',
-    default => sub { [] }
-);
-
-has where_logic => (is => 'rw');
-
-has where => (is => 'rw');
+sub _sources { @_ > 1 ? $_[0]->{_sources} = $_[1] : $_[0]->{_sources} }
+sub _columns { @_ > 1 ? $_[0]->{_columns} = $_[1] : $_[0]->{_columns} }
 
 sub source {
     my $self = shift;
@@ -41,12 +40,14 @@ sub source {
     if (my $as = $source->{as}) {
         return $self
           if scalar(grep { $_->{name} eq $as } @{$self->_sources})
-              || scalar(grep { $_->{as} && ($_->{as} eq $as) } @{$self->_sources});
+              || scalar(
+                grep { $_->{as} && ($_->{as} eq $as) } @{$self->_sources}
+              );
     }
 
     push @{$self->_sources}, $source
-      unless scalar(grep { $_->{name} eq $source->{name} }
-          @{$self->_sources}) && !$source->{as};
+      unless scalar(grep { $_->{name} eq $source->{name} } @{$self->_sources})
+          && !$source->{as};
 
     return $self;
 }
@@ -114,8 +115,9 @@ sub to_string {
                             $col_full = "`$1`.`$col_full`";
                         }
                         elsif ($need_prefix) {
-                            $col_full =
-                              '`' . ($source->{as} || $source->{name}) . "`.`$col_full`";
+                            $col_full = '`'
+                              . ($source->{as} || $source->{name})
+                              . "`.`$col_full`";
                         }
                         else {
                             $col_full = "`$col_full`";
@@ -218,7 +220,7 @@ sub _sources_to_string {
         $string .= '`' . $source->{name} . '`';
 
         if ($source->{as}) {
-            $string .= ' AS ' . '`' . $source->{as} . '`' ;
+            $string .= ' AS ' . '`' . $source->{as} . '`';
         }
 
         if ($source->{constraint}) {
@@ -320,11 +322,11 @@ String representation.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

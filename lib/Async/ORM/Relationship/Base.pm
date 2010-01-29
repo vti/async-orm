@@ -1,59 +1,46 @@
 package Async::ORM::Relationship::Base;
 
-use Any::Moose;
-
-has name => (
-    is       => 'rw',
-    required => 1
-);
-
-has type => (
-    is => 'rw'
-);
-
-has _orig_class => (
-    is => 'rw'
-);
-
-has _class => (
-    is => 'rw'
-);
-
-has with => (
-    is => 'rw'
-);
-
-has where => (
-    is      => 'ArrayRef',
-    is      => 'rw',
-    default => sub { [] }
-);
-
-has join_args => (
-    isa => 'ArrayRef',
-    is => 'rw'
-);
+use strict;
+use warnings;
 
 sub new {
-    my $class = shift;
+    my $class  = shift;
     my %params = @_;
 
-    my $self = $class->SUPER::new(
-        @_,
-        _orig_class => delete $params{orig_class},
-        _class      => delete $params{class}
-    );
-    
+    my $_orig_class = delete $params{orig_class};
+    my $_class      = delete $params{class};
+
+    my $self = {%params};
+    bless $self, $class;
+
+    $self->{_orig_class} = $_orig_class;
+    $self->{_class}      = $_class;
+
+    $self->{where} ||= [];
+
     return $self;
 }
+
+sub name      { @_ > 1 ? $_[0]->{name}      = $_[1] : $_[0]->{name} }
+sub type      { @_ > 1 ? $_[0]->{type}      = $_[1] : $_[0]->{type} }
+sub with      { @_ > 1 ? $_[0]->{with}      = $_[1] : $_[0]->{with} }
+sub where     { @_ > 1 ? $_[0]->{where}     = $_[1] : $_[0]->{where} }
+sub join_args { @_ > 1 ? $_[0]->{join_args} = $_[1] : $_[0]->{join_args} }
+
+sub _orig_class {
+    @_ > 1 ? $_[0]->{_orig_class} = $_[1] : $_[0]->{_orig_class};
+}
+sub _class { @_ > 1 ? $_[0]->{_class} = $_[1] : $_[0]->{_class} }
 
 sub orig_class {
     my $self = shift;
 
     my $orig_class = $self->_orig_class;
 
-    unless (Any::Moose::is_class_loaded($orig_class)) {
-        Any::Moose::load_class($orig_class);
+    unless ($orig_class->can('isa')) {
+        eval "require $orig_class";
+
+        die "Error while loading $orig_class: $@" if $@;
     }
 
     return $orig_class;
@@ -64,8 +51,10 @@ sub class {
 
     my $class = $self->_class;
 
-    unless (Any::Moose::is_class_loaded($class)) {
-        Any::Moose::load_class($class);
+    unless ($class->can('isa')) {
+        eval "require $class";
+
+        die "Error while loading $class: $@" if $@;
     }
 
     return $class;
@@ -88,9 +77,10 @@ Async::ORM::Relationship::Base - A base class for Async::ORM relationships
 
     package My::Relationship;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM::Relationship::Base';
+    use base 'Async::ORM::Relationship::Base';
 
     ...
 
@@ -140,11 +130,11 @@ Returns related table name.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

@@ -1,54 +1,27 @@
 package Async::ORM::Schema;
 
-use Any::Moose;
+use strict;
+use warnings;
 
 require Storable;
 require Carp;
 
-has table => (
-    is => 'rw',
-    required => 1
-);
-
-has auto_increment => (
-    is => 'rw'
-);
-
-has relationships => (
-    isa => 'HashRef',
-    is => 'rw',
-    default => sub {{}}
-);
-
-has class => (
-    is => 'rw'
-);
-
-has _primary_keys => (
-    isa => 'ArrayRef',
-    is => 'rw',
-    default => sub {[]}
-);
-
-has _unique_keys => (
-    isa => 'ArrayRef',
-    is => 'rw',
-    default => sub {[]}
-);
-
-has _columns => (
-    isa => 'ArrayRef',
-    is => 'rw',
-    default => sub {[]}
-);
-
-has _columns_map => (
-    isa => 'HashRef',
-    is => 'rw',
-    default => sub {{}}
-);
-
 use Async::ORM::Relationship;
+
+sub table { @_ > 1 ? $_[0]->{table} = $_[1] : $_[0]->{table} }
+
+sub auto_increment {
+    @_ > 1 ? $_[0]->{auto_increment} = $_[1] : $_[0]->{auto_increment};
+}
+
+sub relationships {
+    @_ > 1 ? $_[0]->{relationships} = $_[1] : $_[0]->{relationships};
+}
+sub class { @_ > 1 ? $_[0]->{class} = $_[1] : $_[0]->{class} }
+
+sub columns_map {
+    @_ > 1 ? $_[0]->{columns_map} = $_[1] : $_[0]->{columns_map};
+}
 
 our %objects;
 
@@ -75,12 +48,11 @@ sub new {
     my $table          = delete $params{table};
     my $auto_increment = delete $params{auto_increment};
 
-    Carp::croak("No table in $for_class") unless $table;
-    Carp::croak("No columns in $for_class") unless $columns;
+    Carp::croak("No table in $for_class")        unless $table;
+    Carp::croak("No columns in $for_class")      unless $columns;
     Carp::croak("No primary keys in $for_class") unless $primary_keys;
 
-    my @columns_raw =
-      ref $columns ? @{$columns} : ($columns);
+    my @columns_raw = ref $columns ? @{$columns} : ($columns);
 
     my @columns = ();
     $columns = {};
@@ -88,7 +60,8 @@ sub new {
     while (my $col = shift @columns_raw) {
         if (ref $col eq 'HASH') {
             $columns->{$prev} = $col;
-        } else {
+        }
+        else {
             $columns->{$col} = {};
             push @columns, $col;
         }
@@ -96,18 +69,19 @@ sub new {
     }
 
     $primary_keys = ref $primary_keys ? $primary_keys : [$primary_keys];
-    $unique_keys = ref $unique_keys ? $unique_keys : [$unique_keys];
+    $unique_keys  = ref $unique_keys  ? $unique_keys  : [$unique_keys];
 
-    my $self = $class->SUPER::new(
+    my $self = {
         class          => $for_class,
         table          => $table,
         auto_increment => $auto_increment,
-        _columns_map       => $columns,
-        _columns => \@columns,
+        columns_map    => $columns,
+        _columns       => \@columns,
         _primary_keys  => $primary_keys,
         _unique_keys   => $unique_keys,
         @_
-    );
+    };
+    bless $self, $class;
 
     # init relationship classes
     if ($self->relationships && %{$self->relationships}) {
@@ -129,7 +103,7 @@ sub is_column {
 
     return unless $name;
 
-    return exists $self->_columns_map->{$name};
+    return exists $self->columns_map->{$name};
 }
 
 sub is_primary_key {
@@ -138,7 +112,7 @@ sub is_primary_key {
 
     return 0 unless $name;
 
-    my @rv = grep {$name eq $_} $self->primary_keys;
+    my @rv = grep { $name eq $_ } $self->primary_keys;
     return @rv ? 1 : 0;
 }
 
@@ -163,28 +137,28 @@ sub is_unique_key {
 
     return 0 unless $self->unique_keys;
 
-    my @rv = grep {$name eq $_} $self->unique_keys;
+    my @rv = grep { $name eq $_ } $self->unique_keys;
     return @rv ? 1 : 0;
 }
 
 sub columns {
     my $self = shift;
 
-    return @{$self->_columns};
+    return @{$self->{_columns}};
 }
 
 sub primary_keys {
     my $self = shift;
 
-    return @{$self->_primary_keys};
+    return @{$self->{_primary_keys}};
 }
 
 sub unique_keys {
     my $self = shift;
 
-    return () unless defined $self->_unique_keys->[0];
+    return () unless defined $self->{_unique_keys}->[0];
 
-    return @{$self->_unique_keys};
+    return @{$self->{_unique_keys}};
 }
 
 sub add_column {
@@ -195,8 +169,8 @@ sub add_column {
 
     $options ||= {};
 
-    $self->_columns_map->{$name} = $options;
-    push @{$self->_columns}, $name;
+    $self->columns_map->{$name} = $options;
+    push @{$self->{_columns}}, $name;
 }
 
 sub add_columns {
@@ -252,9 +226,9 @@ sub del_column {
 
     return unless $name && $self->is_column($name);
 
-    delete $self->_columns_map->{$name};
+    delete $self->columns_map->{$name};
 
-    @{$self->_columns} = grep { $_ ne $name } $self->columns;
+    @{$self->{_columns}} = grep { $_ ne $name } $self->columns;
 }
 
 sub _get_parents {
@@ -262,9 +236,10 @@ sub _get_parents {
     my @parents;
 
     no strict 'refs';
+
     # shift our class name
     foreach my $sub_class (@{"${class}::ISA"}) {
-        push (@parents, _get_parents($sub_class))
+        push(@parents, _get_parents($sub_class))
           if ($sub_class->isa('Async::ORM') && $sub_class ne 'AnyEvent::ORM');
     }
 
@@ -282,9 +257,10 @@ Async::ORM::Schema - Schema class
 
     package Article;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM';
+    use base 'Async::ORM';
 
     __PACKAGE__->schema(
         table          => 'article',
@@ -482,11 +458,11 @@ to delete few old columns.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

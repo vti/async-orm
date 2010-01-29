@@ -1,26 +1,22 @@
 package Async::ORM::DBI::Abstract;
 
-use Any::Moose;
+use strict;
+use warnings;
 
-has dbi => (is => 'rw');
+sub new {
+    my $class = shift;
 
-has user => (is => 'rw');
+    my $self = {@_};
+    bless $self, $class;
 
-has pass => (is => 'rw');
+    return $self;
+}
 
-has attr => (is => 'rw');
-
-has dbh => (is => 'rw');
-
-#requires 'exec';
-
-#requires 'begin_work';
-
-#requires 'commit';
-
-#requires 'rollback';
-
-#requires 'func';
+sub dbi  { @_ > 1 ? $_[0]->{dbi}  = $_[1] : $_[0]->{dbi} }
+sub user { @_ > 1 ? $_[0]->{user} = $_[1] : $_[0]->{user} }
+sub pass { @_ > 1 ? $_[0]->{pass} = $_[1] : $_[0]->{pass} }
+sub attr { @_ > 1 ? $_[0]->{attr} = $_[1] : $_[0]->{attr} }
+sub dbh  { @_ > 1 ? $_[0]->{dbh}  = $_[1] : $_[0]->{dbh} }
 
 1;
 __END__
@@ -33,9 +29,10 @@ Async::ORM::DBI::Abstract - Base class for Async::ORM::DBI drivers
 
     package Async::ORM::DBI::MyNewDriver;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM::DBI::Abstract';
+    use base 'Async::ORM::DBI::Abstract';
 
     sub exec {
         my $self = shift;
@@ -126,11 +123,11 @@ Runs database function.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

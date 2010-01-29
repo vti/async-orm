@@ -1,12 +1,11 @@
 package Async::ORM::Relationship::Proxy;
 
-use Any::Moose;
+use strict;
+use warnings;
 
-extends 'Async::ORM::Relationship::Base';
+use base 'Async::ORM::Relationship::Base';
 
-has proxy_key => (
-    is => 'rw'
-);
+sub proxy_key { @_ > 1 ? $_[0]->{proxy_key} = $_[1] : $_[0]->{proxy_key} }
 
 1;
 __END__
@@ -19,9 +18,10 @@ Async::ORM::Relationship::Proxy - proxy relationship for Async::ORM
 
     package Comment;
 
-    use Any::Moose;
+    use strict;
+    use warnings;
 
-    extends 'Async::ORM';
+    use base 'Async::ORM';
 
     __PACKAGE__->schema(
         table        => 'comment',
@@ -62,11 +62,11 @@ Column name used for getting relationship name.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

@@ -1,26 +1,29 @@
 package Async::ORM::SQL::Base;
 
-use Any::Moose;
+use strict;
+use warnings;
 
 use overload '""' => sub { shift->to_string }, fallback => 1;
 
-has driver => (
-    is => 'rw'
-);
+sub new {
+    my $class = shift;
 
-has bind => (
-    isa     => 'ArrayRef',
-    is      => 'rw',
-    default => sub { [] }
-);
+    my $self = {@_};
+    bless $self, $class;
 
-has _string => (
-    is => 'rw'
-);
+    $self->{bind} ||= [];
 
-has _where_string => (
-    is => 'rw'
-);
+    return $self;
+}
+
+sub driver { @_ > 1 ? $_[0]->{driver} = $_[1] : $_[0]->{driver} }
+sub bind   { @_ > 1 ? $_[0]->{bind}   = $_[1] : $_[0]->{bind} }
+
+sub _string { @_ > 1 ? $_[0]->{_string} = $_[1] : $_[0]->{_string} }
+
+sub _where_string {
+    @_ > 1 ? $_[0]->{_where_string} = $_[1] : $_[0]->{_where_string};
+}
 
 sub merge {
     my $self   = shift;
@@ -165,11 +168,11 @@ Converts instance to string.
 
 =head1 AUTHOR
 
-Viacheslav Tikhanovskii, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, C<vti@cpan.org>.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, Viacheslav Tikhanovskii.
+Copyright (C) 2009, Viacheslav Tykhanovskyi.
 
 This program is free software, you can redistribute it and/or modify it under
 the same terms as Perl 5.10.

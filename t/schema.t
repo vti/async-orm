@@ -135,7 +135,7 @@ is($relationships->{foo}->orig_class, 'Advanced');
 is_deeply($relationships->{foo}->type, 'one to one');
 
 is_deeply([ColumnsWithOptions->schema->columns], [qw/ id title /]);
-is_deeply(ColumnsWithOptions->schema->_columns_map,
+is_deeply(ColumnsWithOptions->schema->columns_map,
     {id => {}, title => {length => 1}});
 
 1;
