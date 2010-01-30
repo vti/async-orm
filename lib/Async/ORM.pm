@@ -393,37 +393,22 @@ sub create {
 
     warn "$sql" if DEBUG;
 
-    $dbh->exec(
-        "$sql" => [@values] => sub {
-            my ($dbh, $rows, $rv) = @_;
+    if (my $auto_increment = $self->schema->auto_increment) {
+        my $table = $self->schema->table;
 
-            return $cb->($dbh) unless $rv;
+        $dbh->exec_and_get_last_insert_id(
+            $table,
+            $auto_increment,
+            "$sql" => [@values] => sub {
+                my ($dbh, $id, $rv) = @_;
 
-            $self->is_in_db(1);
-            $self->is_modified(0);
+                return $cb->($dbh) unless $rv;
 
-            if (my $auto_increment = $self->schema->auto_increment) {
-                my $table = $self->schema->table;
-                $dbh->func(
-                    last_insert_id =>
-                      [undef, undef, $table, $auto_increment] => sub {
-                        my ($dbh, $id, $handle_error) = @_;
+                $self->column($auto_increment => $id);
 
-                        $self->column($auto_increment => $id);
-                        $self->is_modified(0);
+                $self->is_in_db(1);
+                $self->is_modified(0);
 
-                        #return $cb->($dbh, $self);
-                        $self->_create_related(
-                            $dbh => sub {
-                                my ($dbh) = @_;
-
-                                return $cb->($dbh, $self);
-                            }
-                        );
-                    }
-                );
-            }
-            else {
                 $self->_create_related(
                     $dbh => sub {
                         my ($dbh) = @_;
@@ -432,8 +417,28 @@ sub create {
                     }
                 );
             }
-        }
-    );
+        );
+    }
+    else {
+        $dbh->exec(
+            "$sql" => [@values] => sub {
+                my ($dbh, $rows, $rv) = @_;
+
+                return $cb->($dbh) unless $rv;
+
+                $self->is_in_db(1);
+                $self->is_modified(0);
+
+                $self->_create_related(
+                    $dbh => sub {
+                        my ($dbh) = @_;
+
+                        return $cb->($dbh, $self);
+                    }
+                );
+            }
+        );
+    }
 }
 
 sub load {

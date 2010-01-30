@@ -18,6 +18,31 @@ sub pass { @_ > 1 ? $_[0]->{pass} = $_[1] : $_[0]->{pass} }
 sub attr { @_ > 1 ? $_[0]->{attr} = $_[1] : $_[0]->{attr} }
 sub dbh  { @_ > 1 ? $_[0]->{dbh}  = $_[1] : $_[0]->{dbh} }
 
+sub exec_and_get_last_insert_id {
+    my $self = shift;
+    my ($table, $auto_increment, $sql, $args, $cb) = @_;
+
+    ($cb, $args) = ($args, []) unless $cb;
+
+    $self->exec(
+        $sql,
+        $args => sub {
+            my ($self, $rows, $rv) = @_;
+
+            return $cb->($self) unless $rv;
+
+            $self->func(
+                last_insert_id => [undef, undef, $table, $auto_increment] =>
+                  sub {
+                    my ($self, $id, $error) = @_;
+
+                    $cb->($self, $id, $error ? 0 : 1);
+                }
+            );
+        }
+    );
+}
+
 1;
 __END__
 
