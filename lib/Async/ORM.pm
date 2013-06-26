@@ -1194,8 +1194,11 @@ sub _map_row_to_object {
             if ($rel_info->{subwith}) {
                 foreach my $subwith (@{$rel_info->{subwith}}) {
                     $parent_object = $parent_object->_related->{$subwith};
-                    die "load $subwith first" unless $parent_object;
+               # do not check , for compatible when whole 'null' columns of a subwith
+               #     die "load $subwith first" unless $parent_object;
+                      last unless $parent_object;
                 }
+                splice @$row, 0, scalar @{$rel_info->{columns}} and next unless $parent_object;
             }
 
             foreach my $parent_object_ (
