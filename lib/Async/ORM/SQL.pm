@@ -11,7 +11,7 @@ sub build {
 
     my $command_class = 'Async::ORM::SQL::' . ucfirst $command;
 
-    unless ($command_class->can('isa')) {
+    unless ($command_class->can('new')) {
         eval "require $command_class";
 
         die "Error while loading $command_class: $@" if $@;

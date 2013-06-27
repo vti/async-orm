@@ -10,7 +10,7 @@ sub new {
 
     my $driver = delete $params{driver} || 'Async::ORM::DBI::Simple';
 
-    unless ($driver->can('isa')) {
+    unless ($driver->can('new')) {
         eval "require $driver;";
         die $@ if $@;
     }
