@@ -28,7 +28,7 @@ sub map_class {
 
     my $map_class = $self->_map_class;
 
-    unless ($map_class->can('isa')) {
+    unless ($map_class->can('new')) {
         eval "require $map_class";
 
         die "Error while loading $map_class: $@" if $@;
@@ -42,7 +42,7 @@ sub class {
 
     my $map_class = $self->map_class;
 
-    unless ($map_class->can('isa')) {
+    unless ($map_class->can('new')) {
         eval "require $map_class";
 
         die "Error while loading $map_class: $@" if $@;
