@@ -12,7 +12,7 @@ sub build {
     my @parts = map {ucfirst} split(' ', $params{type});
     my $rel_class = "Async::ORM::Relationship::" . join('', @parts);
 
-    unless ($rel_class->can('isa')) {
+    unless ($rel_class->can('new')) {
         eval "require $rel_class";
 
         die "Error while loading $rel_class: $@" if $@;

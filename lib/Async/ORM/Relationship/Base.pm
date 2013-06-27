@@ -37,7 +37,7 @@ sub orig_class {
 
     my $orig_class = $self->_orig_class;
 
-    unless ($orig_class->can('isa')) {
+    unless ($orig_class->can('new')) {
         eval "require $orig_class";
 
         die "Error while loading $orig_class: $@" if $@;
@@ -51,7 +51,7 @@ sub class {
 
     my $class = $self->_class;
 
-    unless ($class->can('isa')) {
+    unless ($class->can('new')) {
         eval "require $class";
 
         die "Error while loading $class: $@" if $@;

@@ -1198,7 +1198,10 @@ sub _map_row_to_object {
                #     die "load $subwith first" unless $parent_object;
                       last unless $parent_object;
                 }
-                splice @$row, 0, scalar @{$rel_info->{columns}} and next unless $parent_object;
+                unless($parent_object){
+                  splice @$row, 0, scalar @{$rel_info->{columns}};
+                  next;
+                }
             }
 
             foreach my $parent_object_ (
